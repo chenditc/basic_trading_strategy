@@ -5,6 +5,7 @@
 # 安装设置
 1. 安装 [vnpy studio](https://download.vnpy.com/vnstudio-2.4.0.exe)
 2. 将 [strategies/utils/sample_system_configs.py](strategies/utils/sample_system_configs.py) 复制到 strategies/utils/system_configs.py 并修改成自己的值。
+3. *安装 tushare `pip install tushare`，如果不使用 tushare 也可以不安装
 
 # 数据准备
 目前使用的是 [tushare](https://tushare.pro/document/2) 的数据，下载后使用 vnpy 的数据管理库保存至本地 sqlite，如果希望接入其他数据源，可以参考 strategies/utils/tushare_data_download.py 的实现。
