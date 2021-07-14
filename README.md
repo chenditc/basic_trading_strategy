@@ -21,7 +21,7 @@
 --------
 # 策略目录
 
-[股指期货基差套利](strategies/cffex_back_testing.ipynb)
-[港股自动打新](hk_ipo_strategy.ipynb)
+- [股指期货基差套利](strategies/cffex_back_testing.ipynb)
+- [港股自动打新](hk_ipo_strategy.ipynb)
 
 
