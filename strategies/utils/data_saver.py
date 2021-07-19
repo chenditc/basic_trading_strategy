@@ -4,14 +4,20 @@ from vnpy.trader.constant import Interval
 
 from datetime import datetime
 
+from pytz import timezone
+CHINA_TZ = timezone("Asia/Shanghai")
+UTC_TZ = timezone("UTC")
+
 def save_tushare_df(df, exchange):
     tushare_bars = []
     for index, row in df.iterrows():
         symbol, suffix = row['ts_code'].split(".")
+
+        trade_date = UTC_TZ.localize(datetime.strptime(row['trade_date'], '%Y%m%d'))
         new_bar = BarData(gateway_name='tushare', 
                           symbol=symbol, 
                           exchange=exchange, 
-                          datetime=datetime.strptime(row['trade_date'], '%Y%m%d'),
+                          datetime=trade_date,
                           interval=Interval.DAILY,
                           volume=row['vol'],
                           open_price=row['open'],
