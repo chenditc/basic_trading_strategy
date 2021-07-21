@@ -13,3 +13,7 @@ livermore_config = {
     "key": "1111",
     "secret": "1111"
 }
+
+serverchan_config = {
+    "send_key": "11111"
+}
