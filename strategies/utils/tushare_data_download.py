@@ -17,6 +17,9 @@ def download_daily_price(ts_code, asset, exchange, start_date="19000101", end_da
     
     try:
         df = tushare.pro_bar(ts_code=ts_code, asset=asset, start_date=start_date, end_date=end_date)
+        df["open"] = df["open"].fillna(df["close"])
+        df["low"] = df["low"].fillna(df["close"])
+        df["high"] = df["high"].fillna(df["close"])
     except IOError as e:
         print(f"Failed to download for {ts_code}")
         print(e)
@@ -25,13 +28,14 @@ def download_daily_price(ts_code, asset, exchange, start_date="19000101", end_da
     print(f"Updated {len(df)} records for {ts_code}")
     return True
 
-def download_future_data_until_success(start_date, end_date, prefix, max_retry = 10, retry_interval = 60):
+def download_future_data_until_success(start_date, end_date, prefix, max_retry = 10, retry_interval = 60, step_days=32):
     some_success = False
     retry_count = 0
     while some_success is False:
         symbol_list = symbol_generator.get_index_future_symbol(start_date, 
                                              end_date, 
-                                             prefix=prefix)
+                                             prefix=prefix,
+                                             step_days=step_days)
         for symbol in symbol_list:
             some_success |= download_daily_price(symbol + ".CFX", asset='FT', exchange=Exchange.CFFEX)
         
@@ -74,5 +78,14 @@ def prepare_if_data_set(recent_only=True):
 
     return local_symbol_list
         
+def prepare_bond_future_data_set(recent_only=True):
+    start_date=datetime(2015,12,1)
+    
+    download_future_data_until_success(start_date=start_date, end_date=datetime.today(), prefix="TF", step_days=92)
+    for symbol in symbol_generator.get_index_future_symbol(datetime(2015,12,1), datetime.today(), prefix="TF", step_days=92):
+        local_symbol_list.append(symbol + ".CFFEX")
+
+    return local_symbol_list
+    
 if __name__ == "__main__":
     prepare_ic_data_set()
