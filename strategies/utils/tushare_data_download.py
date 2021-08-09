@@ -5,8 +5,7 @@ from vnpy.trader.constant import Exchange
 
 from utils import symbol_generator
 from utils import data_saver
-
-from .system_configs import tushare_config
+from utils.system_configs import tushare_config
 
 import tushare
 tushare.set_token(tushare_config["token"])
@@ -17,6 +16,7 @@ def download_daily_price(ts_code, asset, exchange, start_date="19000101", end_da
     
     try:
         df = tushare.pro_bar(ts_code=ts_code, asset=asset, start_date=start_date, end_date=end_date)
+        time.sleep(3.5)
         df["open"] = df["open"].fillna(df["close"])
         df["low"] = df["low"].fillna(df["close"])
         df["high"] = df["high"].fillna(df["close"])
@@ -88,4 +88,4 @@ def prepare_bond_future_data_set(recent_only=True):
     return local_symbol_list
     
 if __name__ == "__main__":
-    prepare_ic_data_set()
+    prepare_ic_data_set(False)
