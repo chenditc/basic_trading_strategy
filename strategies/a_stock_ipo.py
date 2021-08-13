@@ -11,14 +11,20 @@ class MyStrategyObject():
 	ipo_bond_complete_map = {}
 
 def send_server_chan(title, text):
-    print(title, text)
-    data = {
-        "title" : title,
-        "desp" : text,
-    }
-    url = f"https://sctapi.ftqq.com/xxx.send"
-    response = requests.post(url, data=data)
-    print(response.json()["message"])
+	print(title, text)
+	data = {
+		"title" : title,
+		"desp" : text,
+	}
+	url = f"https://sctapi.ftqq.com/xxx.send"
+	try_cnt = 0
+	while try_cnt < 5:
+		try:
+			response = requests.post(url, data=data)
+			print(response.json()["message"])
+			return
+		except:
+			try_cnt += 1
     
 def get_applied_code_set(ContextInfo):
 	applied_code_set = set()
@@ -96,7 +102,9 @@ def handlebar(ContextInfo):
 			(stock_code not in applied_code_set and stock_code not in blacklist_code)]
 		
 		if len(ipo_stock_to_apply) == 0:
-			text = f"{today_date}所有新股完成申购完成，已申购成功： {applied_code_set}，申购失败： {blacklist_code}"
+			text = f"{today_date}所有新股完成申购完成，已申购成功： {applied_code_set}"
+			if len(blacklist_code) > 0:
+				text += f"，申购失败： {blacklist_code}"
 			send_server_chan("A股新股申购完成", text)
 			ContextInfo.strategy_obj.ipo_complete_map[today_date] = text
 		
@@ -118,10 +126,11 @@ def handlebar(ContextInfo):
 			open_date = ContextInfo.get_open_date(stock_code)
 			up_stop_price = ContextInfo.get_instrumentdetail(stock_code)["UpStopPrice"]
 			last_price = ContextInfo.get_market_data(["close"], stock_code = [stock_code], skip_paused = True, period = '1m', dividend_type = 'none', count = -1)
-			if str(open_date) > two_month_ago:
+			if str(open_date) > two_month_ago and position.m_nVolume != 0:
 				new_pos_map[stock_code] = {
 					"up_stop_price" : up_stop_price,
 					"name" : position.m_strInstrumentName,
+					"vol": position.m_nVolume,
 					"open_date": str(open_date),
 					"last_price" : last_price
 				}
@@ -130,12 +139,16 @@ def handlebar(ContextInfo):
 		
 		if len(new_pos_map) == 0:
 			print("新股跟踪已完成")
+			send_server_chan("A股新股跟踪", "新股跟踪已完成")
 			ContextInfo.strategy_obj.new_stock_tracking_complete_map[today_date] = "No new stock"
 	
 		# 查看对应股票的最新价是否为涨停价
 		for stock_code, pos_info in new_pos_map.items():
 			if pos_info["last_price"] < pos_info["up_stop_price"] * 0.99:
-				text = f"新股开板，应当卖出{stock_code}"
+				last_price = pos_info["last_price"]
+				up_stop_price = pos_info["up_stop_price"]
+				name = pos_info["name"]
+				text = f"新股开板，应当卖出{name},当前价格: {last_price},涨停价格: {up_stop_price}"
 				send_server_chan("A股新股卖出", text)
 		
 		# 卖出非涨停且不在上涨趋势的股票，上涨趋势定义为30分钟均线高于3小时均线。
