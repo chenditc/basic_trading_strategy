@@ -17,3 +17,7 @@ livermore_config = {
 serverchan_config = {
     "send_key": "11111"
 }
+
+notification_callback_urls = [
+   "https://di-trading-log.azurewebsites.net/api/log_event?code=123"   
+]

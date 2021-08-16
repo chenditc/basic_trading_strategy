@@ -3,6 +3,7 @@ import json
 
 from .system_configs import email_config
 from .system_configs import serverchan_config
+from .system_configs import notification_callback_urls
 
 def send_email(title, text):
     files = {
@@ -36,3 +37,21 @@ def send_server_chan(title, text, send_key=None, retry=5):
             print(e)
 
     
+def send_notification_callback(title, text):
+    print(title, text)
+    for url in notification_callback_urls:
+        try:
+            print(f"Sending notification callback: {url}")
+            data = {
+                "title" : title,
+                "desp" : text,
+            }
+            response = requests.post(url, data=json.dumps(data))
+            print(response.content)
+        except Exception as e:
+            print(f"Failed to call notification callback url: {url}")
+            print(e)
+            
+def send_notification(title, text):
+    send_notification_callback(title, text)
+    send_server_chan(title, text)
