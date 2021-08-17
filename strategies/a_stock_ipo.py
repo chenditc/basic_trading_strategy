@@ -17,7 +17,7 @@ def send_server_chan(title, text):
 		"title" : title,
 		"desp" : text,
 	}
-	url = f"https://sctapi.ftqq.com/SCT55407T7uab9qncnbSkqFjWJDDIVIjv.send"
+	url = f"https://sctapi.ftqq.com/xxxx.send"
 	try_cnt = 0
 	while try_cnt < 5:
 		try:
@@ -29,7 +29,7 @@ def send_server_chan(title, text):
 
 def send_notification_log(title, text):
 	print("Logging to azure", title, text)
-	url = "https://di-trading-log.azurewebsites.net/api/log_event?code=gMcbj7J1vKh/VCs8e2MkVaHRp/4NLz8dttpgk03p8SMKcJQHo/8JKQ=="
+	url = "https://di-trading-log.azurewebsites.net/api/log_event?code=xxxxx"
 	data = {
 		"title" : title,
 		"desp" : text,
