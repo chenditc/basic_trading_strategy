@@ -4,6 +4,7 @@
 '''
 import requests
 import datetime
+import json
 
 class MyStrategyObject():
 	ipo_complete_map = {}
@@ -16,7 +17,7 @@ def send_server_chan(title, text):
 		"title" : title,
 		"desp" : text,
 	}
-	url = f"https://sctapi.ftqq.com/xxx.send"
+	url = f"https://sctapi.ftqq.com/SCT55407T7uab9qncnbSkqFjWJDDIVIjv.send"
 	try_cnt = 0
 	while try_cnt < 5:
 		try:
@@ -24,6 +25,23 @@ def send_server_chan(title, text):
 			print(response.json()["message"])
 			return
 		except:
+			try_cnt += 1
+
+def send_notification_log(title, text):
+	print("Logging to azure", title, text)
+	url = "https://di-trading-log.azurewebsites.net/api/log_event?code=gMcbj7J1vKh/VCs8e2MkVaHRp/4NLz8dttpgk03p8SMKcJQHo/8JKQ=="
+	data = {
+		"title" : title,
+		"desp" : text,
+	}
+	try_cnt = 0
+	while try_cnt < 5:
+		try:
+			response = requests.post(url, data=json.dumps(data))
+			print(response.content)
+			return
+		except Exception as e:
+			print(e)
 			try_cnt += 1
     
 def get_applied_code_set(ContextInfo):
@@ -106,6 +124,7 @@ def handlebar(ContextInfo):
 			if len(blacklist_code) > 0:
 				text += f"，申购失败： {blacklist_code}"
 			send_server_chan("A股新股申购完成", text)
+			send_notification_log("A股新股申购完成", text)
 			ContextInfo.strategy_obj.ipo_complete_map[today_date] = text
 		
 		# 针对每只新股下单
@@ -140,6 +159,7 @@ def handlebar(ContextInfo):
 		if len(new_pos_map) == 0:
 			print("新股跟踪已完成")
 			send_server_chan("A股新股跟踪", "新股跟踪已完成")
+			send_notification_log("A股新股跟踪", "新股跟踪已完成")
 			ContextInfo.strategy_obj.new_stock_tracking_complete_map[today_date] = "No new stock"
 	
 		# 查看对应股票的最新价是否为涨停价
