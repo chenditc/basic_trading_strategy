@@ -11,25 +11,9 @@ class MyStrategyObject():
 	new_stock_tracking_complete_map = {}
 	ipo_bond_complete_map = {}
 
-def send_server_chan(title, text):
-	print(title, text)
-	data = {
-		"title" : title,
-		"desp" : text,
-	}
-	url = f"https://sctapi.ftqq.com/xxxx.send"
-	try_cnt = 0
-	while try_cnt < 5:
-		try:
-			response = requests.post(url, data=data)
-			print(response.json()["message"])
-			return
-		except:
-			try_cnt += 1
-
 def send_notification_log(title, text):
 	print("Logging to azure", title, text)
-	url = "https://di-trading-log.azurewebsites.net/api/log_event?code=xxxxx"
+	url = "https://di-trading-log.azurewebsites.net/api/log_event?code=gMcbj7J1vKh/VCs8e2MkVaHRp/4NLz8dttpgk03p8SMKcJQHo/8JKQ=="
 	data = {
 		"title" : title,
 		"desp" : text,
@@ -123,7 +107,6 @@ def handlebar(ContextInfo):
 			text = f"{today_date}所有新股完成申购完成，已申购成功： {applied_code_set}"
 			if len(blacklist_code) > 0:
 				text += f"，申购失败： {blacklist_code}"
-			send_server_chan("A股新股申购完成", text)
 			send_notification_log("A股新股申购完成", text)
 			ContextInfo.strategy_obj.ipo_complete_map[today_date] = text
 		
@@ -158,7 +141,6 @@ def handlebar(ContextInfo):
 		
 		if len(new_pos_map) == 0:
 			print("新股跟踪已完成")
-			send_server_chan("A股新股跟踪", "新股跟踪已完成")
 			send_notification_log("A股新股跟踪", "新股跟踪已完成")
 			ContextInfo.strategy_obj.new_stock_tracking_complete_map[today_date] = "No new stock"
 	
@@ -169,7 +151,7 @@ def handlebar(ContextInfo):
 				up_stop_price = pos_info["up_stop_price"]
 				name = pos_info["name"]
 				text = f"新股开板，应当卖出{name},当前价格: {last_price},涨停价格: {up_stop_price}"
-				send_server_chan("A股新股卖出", text)
+				send_notification_log("A股新股卖出", text)
 		
 		# 卖出非涨停且不在上涨趋势的股票，上涨趋势定义为30分钟均线高于3小时均线。
 	
