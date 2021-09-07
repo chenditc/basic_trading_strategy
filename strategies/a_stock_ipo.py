@@ -12,6 +12,8 @@ class MyStrategyObject():
 	ipo_bond_complete_map = {}
 
 def send_notification_log(title, text):
+	if True: 
+		return
 	print("Logging to azure", title, text)
 	url = "https://di-trading-log.azurewebsites.net/api/log_event?code=gMcbj7J1vKh/VCs8e2MkVaHRp/4NLz8dttpgk03p8SMKcJQHo/8JKQ=="
 	data = {
@@ -118,7 +120,7 @@ def handlebar(ContextInfo):
 			passorder(23,1101,ContextInfo.accID,stock_code,5,-1,stock_info["maxPurchaseNum"],1,ContextInfo)
 	
 	if today_date not in ContextInfo.strategy_obj.new_stock_tracking_complete_map:
-		print("开始跟踪新股走势")
+		send_notification_log("A股新股跟踪", "开始跟踪新股走势")
 		# 查看当前持仓情况，获取次新股列表
 		two_month_ago = (datetime.datetime.today() - datetime.timedelta(days=60)).strftime("%Y%m%d")
 		position_list = get_trade_detail_data(ContextInfo.accID, "STOCK", "POSITION")
@@ -146,10 +148,13 @@ def handlebar(ContextInfo):
 	
 		# 查看对应股票的最新价是否为涨停价
 		for stock_code, pos_info in new_pos_map.items():
+			name = pos_info["name"]
+			if ContextInfo.get_bvol(stock_code) == 0:
+				print(f"No volume, skip this stock {name} for now")
+				continue
 			if pos_info["last_price"] < pos_info["up_stop_price"] * 0.99:
 				last_price = pos_info["last_price"]
 				up_stop_price = pos_info["up_stop_price"]
-				name = pos_info["name"]
 				text = f"新股开板，应当卖出{name},当前价格: {last_price},涨停价格: {up_stop_price}"
 				send_notification_log("A股新股卖出", text)
 		
