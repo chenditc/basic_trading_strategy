@@ -9,6 +9,7 @@ import json
 class MyStrategyObject():
 	ipo_complete_map = {}
 	new_stock_tracking_complete_map = {}
+	new_stock_tracking_start_map = {}
 	ipo_bond_complete_map = {}
 
 def send_notification_log(title, text):
@@ -142,7 +143,8 @@ def handlebar(ContextInfo):
 			print("新股跟踪已完成")
 			send_notification_log("A股新股跟踪", "新股跟踪已完成")
 			ContextInfo.strategy_obj.new_stock_tracking_complete_map[today_date] = "No new stock"
-		else:
+		elif today_date not in ContextInfo.strategy_obj.new_stock_tracking_start_map:
+			ContextInfo.strategy_obj.new_stock_tracking_start_map[today_date] = 1
 			send_notification_log("A股新股跟踪", f"开始跟踪新股走势: {new_pos_map}")
 	
 		# 查看对应股票的最新价是否为涨停价
