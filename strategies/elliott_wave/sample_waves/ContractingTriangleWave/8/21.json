@@ -1,0 +1,56 @@
+{
+  "type": "ContractingTriangleWave",
+  "points": [
+    {
+      "time_offset": 1,
+      "price": 116
+    },
+    {
+      "time_offset": 11,
+      "price": 100
+    },
+    {
+      "time_offset": 12,
+      "price": 110
+    },
+    {
+      "time_offset": 14,
+      "price": 101
+    },
+    {
+      "time_offset": 17,
+      "price": 108
+    },
+    {
+      "time_offset": 18,
+      "price": 104
+    }
+  ],
+  "sub_wave": [
+    {
+      "type": "ZigZagCombinationWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    }
+  ]
+}
