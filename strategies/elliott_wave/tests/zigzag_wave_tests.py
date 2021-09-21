@@ -27,3 +27,15 @@ class ZigZagWaveTests(BaseWaveTest):
     def test_guide_8(self):
         wave = wave_utils.load_wave_from_dict({'type': 'ZigZagWave', 'points': [{'time_offset': 0, 'price': 102}, {'time_offset': 2, 'price': 104}, {'time_offset': 10, 'price': 103}, {'time_offset': 12, 'price': 105}], 'sub_wave': [{'type': 'ImpluseWave', 'points': [], 'sub_wave': []}, {'type': 'TriangleWave', 'points': [], 'sub_wave': []}, {'type': 'ImpluseWave', 'points': [], 'sub_wave': []}]})
         self.assert_wave_match_guide(guides.ZigZagWaveGuide8, wave, 1)
+        
+class ZigZagCombinationWaveTests(BaseWaveTest):
+    def test_guide_1_2(self):
+        wave = wave_utils.load_wave_from_dict({'type': 'ZigZagTripleCombinationWave', 'points': [{'time_offset': 2, 'price': 103}, {'time_offset': 6, 'price': 105}, {'time_offset': 8, 'price': 100}, {'time_offset': 12, 'price': 112}, {'time_offset': 14, 'price': 104}, {'time_offset': 18, 'price': 116}], 'sub_wave': [{'type': 'ZigZagWave', 'points': [], 'sub_wave': []}, {'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}, {'type': 'ZigZagWave', 'points': [], 'sub_wave': []}, {'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}, {'type': 'ZigZagWave', 'points': [], 'sub_wave': []}]})
+        self.assert_wave_match_guide(guides.ZigzagCombinationWaveGuide1, wave, 1)
+        self.assert_wave_match_guide(guides.ZigzagCombinationWaveGuide2, wave, 1)
+        
+class TripleCombinationWaveTests(BaseWaveTest):
+    def test_guide_1_2(self):
+        wave = wave_utils.load_wave_from_dict({'type': 'TripleCombinationWave', 'points': [{'time_offset': 1, 'price': 100}, {'time_offset': 3, 'price': 117}, {'time_offset': 5, 'price': 101}, {'time_offset': 8, 'price': 114}, {'time_offset': 11, 'price': 105}, {'time_offset': 19, 'price': 118}], 'sub_wave': [{'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}, {'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}, {'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}, {'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}, {'type': 'TripleCombinationWave', 'points': [], 'sub_wave': []}]})
+        self.assert_wave_match_guide(guides.DoubleCombinationWaveGuide1, wave, 1)
+        self.assert_wave_match_guide(guides.TripleCombinationWaveGuide1, wave, 1)

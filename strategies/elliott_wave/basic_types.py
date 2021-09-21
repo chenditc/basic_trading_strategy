@@ -34,6 +34,7 @@ class Wave(ABC):
     min_point_num = 0 # 该浪最少应该有的点个数
     max_point_num = 999
     is_extend_wave = False # 是否是延长浪
+    is_concrete_wave = False
     
     def __init__(self, point_list: list = [], sub_wave_types = []):
         self.point_list = point_list
@@ -57,16 +58,6 @@ class Wave(ABC):
         子浪类型的可选值列表
         """
         return []
-    
-    def get_possible_subwave_combination(self):
-        combinations = [[]]
-        for wave_type_list in self.get_sub_wave_type_limit():
-            new_combinations = []
-            for wave_type in wave_type_list:
-                for prev_comb in combinations:
-                    new_combinations.append(prev_comb + [wave_type])
-            combinations = new_combinations
-        return combinations
     
     def init_subwave_with_types(self, subwave_types):
         self.sub_wave = [ subwave_type() for subwave_type in subwave_types ]

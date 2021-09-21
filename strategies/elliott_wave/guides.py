@@ -130,7 +130,8 @@ class ImpluseWaveGuide12(Guide):
             return 1
         if isinstance(wave.sub_wave[3], TriangleWave):
             return 1
-        if isinstance(wave.sub_wave[3], FlatCombinationWave):
+        
+        if isinstance(wave.sub_wave[3], CombinationWave) and not isinstance(wave.sub_wave[3], ZigZagCombinationWave):
             return 1
         return 0
 
@@ -540,6 +541,62 @@ class ExpandingTriangleWaveGuide2(Guide):
             if isinstance(sub_wave, TriangleWave):
                 return 0
         return 1
+    
+class ZigzagCombinationWaveGuide1(Guide):
+    desp = "双重、三重锯齿形调整浪的第一个调整浪没有产生足够的价格调整，所以浪C的位移应该大于浪B，且多出来的部分与浪 A数量级接近"
+    def get_score(wave:Wave):
+        move_a = wave.get_sub_wave_move_abs(0)
+        move_b = wave.get_sub_wave_move_abs(1)
+        move_c = wave.get_sub_wave_move_abs(2)
+        
+        if move_c < move_b:
+            return 0
+        
+        move_ratio = (move_c - move_b) / move_a
+        if move_ratio > 0.2 and move_ratio < 5:
+            return 1
+        return 0
+    
+class ZigzagCombinationWaveGuide2(Guide):
+    desp = "双重、三重锯齿形调整浪的第一个调整浪没有产生足够的价格调整，所以浪E的位移应该大于浪D，且多出来的部分与浪 A数量级接近"
+    def get_score(wave:Wave):
+        move_a = wave.get_sub_wave_move_abs(0)
+        move_d = wave.get_sub_wave_move_abs(3)
+        move_e = wave.get_sub_wave_move_abs(4)
+        
+        if move_e < move_d:
+            return 0
+        
+        move_ratio = (move_e - move_d) / move_a
+        if move_ratio > 0.2 and move_ratio < 5:
+            return 1
+        return 0
+    
+class DoubleCombinationWaveGuide1(Guide):
+    desp = "双重、三重平台形调整浪的第一个调整浪已经产生足够的价格调整，所以浪C与浪B的位移差应该小于浪A的数量级"
+    def get_score(wave:Wave):
+        move_a = wave.get_sub_wave_move_abs(0)
+        move_b = wave.get_sub_wave_move_abs(1)
+        move_c = wave.get_sub_wave_move_abs(2)
+        
+        move_ratio = abs(move_c - move_b) / move_a
+        if move_ratio < 0.2:
+            return 1
+        return 0
+    
+class TripleCombinationWaveGuide1(Guide):
+    desp = "双重、三重平台形调整浪的第一个调整浪已经产生足够的价格调整，所以浪E终点应该距离浪A比较近"
+    def get_score(wave:Wave):
+        move_a = wave.get_sub_wave_move_abs(0)
+        move_b = wave.get_sub_wave_move_abs(1)
+        move_c = wave.get_sub_wave_move_abs(2)
+        move_d = wave.get_sub_wave_move_abs(3)
+        move_e = wave.get_sub_wave_move_abs(4)
+        
+        move_ratio = abs(move_e - move_d + move_c - move_b) / move_a
+        if move_ratio < 0.2:
+            return 1
+        return 0
                 
 ImpluseWave.guide_dict = {
         ImpluseWaveGuide1: 1,
@@ -617,3 +674,21 @@ ExpandingTriangleWave.guide_dict.update({
     ExpandingTriangleWaveGuide1: 1,
     ExpandingTriangleWaveGuide2: 1
 })
+
+ZigZagCombinationWave.guide_dict = {
+    ZigzagCombinationWaveGuide1: 1
+}
+
+ZigZagTripleCombinationWave.guide_dict = {
+    ZigzagCombinationWaveGuide1: 1,
+    ZigzagCombinationWaveGuide2: 1
+}
+
+DoubleCombinationWave.guide_dict = {
+    DoubleCombinationWaveGuide1: 1
+}
+
+TripleCombinationWave.guide_dict = {
+    DoubleCombinationWaveGuide1: 1,
+    TripleCombinationWaveGuide1: 1
+}

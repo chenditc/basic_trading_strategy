@@ -229,7 +229,7 @@ class Rule18(Rule):
         move4 = wave.get_sub_wave_move_abs(3)
         return move5 > move4
     
-class Rule19(Rule):
+class Rule19(SubWaveRule):
     desp = "所有子浪都是锯齿形调整浪"
     def validate(wave: Wave):
         for sub_wave in wave.sub_wave:
@@ -241,7 +241,7 @@ class Rule19(Rule):
                 return False
         return True
 
-class Rule20(Rule):
+class Rule20(SubWaveRule):
     desp = "浪2和浪4总是锯齿形调整浪"
     def validate(wave: Wave):
         for index, sub_wave in enumerate(wave.sub_wave):
@@ -276,7 +276,7 @@ class Rule23(Rule):
         move1 = wave.get_sub_wave_move_abs(0)
         return move2 > move1 * 0.9
     
-class Rule24(Rule):
+class Rule24(SubWaveRule):
     desp = "至少4个是锯齿形调整浪，或锯齿形联合调整浪"
     def validate(wave: Wave):
         zigzag_wave_num = 0
@@ -349,19 +349,28 @@ class Rule30(Rule):
         move_e = wave.get_sub_wave_move_abs(4)
         return (move_c < move_b*1.5 and move_d < move_c*1.5 and move_e < move_d*1.5)
     
+class Rule31(SubWaveRule):
+    desp = "最多只有一个复杂浪"
+    def validate(wave: Wave):
+        complex_wave_num = 0
+        for sub_wave in wave.sub_wave:
+            if sub_wave is None:
+                continue
+            if not isinstance(sub_wave, waves.ZigZagWave):
+                complex_wave_num += 1
+        return complex_wave_num <= 1
+
+waves.Wave.rule_list = [PointNumberRule, Rule0]
 waves.ImpluseWave.rule_list = [PointNumberRule, Rule0, Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9]
 
 waves.DiagonalWave.rule_list = [PointNumberRule, Rule0, Rule11, Rule2, Rule12, Rule13, Rule14, Rule15, Rule16, Rule17, Rule18]
-
 waves.EndingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule19]
-
 waves.LeadingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule20, Rule21]
 
-waves.ZigZagWave.rule_list = [PointNumberRule, Rule0, Rule22]
-
-waves.FlatWave.rule_list = [PointNumberRule, Rule0, Rule23]
-
-waves.TriangleWave.rule_list = [PointNumberRule, Rule0, Rule24, Rule25, Rule26]
+waves.CorrectiveWave.rule_list = waves.CorrectiveWave.rule_list + [Rule26]
+waves.ZigZagWave.rule_list = waves.CorrectiveWave.rule_list + [Rule22]
+waves.FlatWave.rule_list = waves.CorrectiveWave.rule_list + [Rule23]
+waves.TriangleWave.rule_list = waves.CorrectiveWave.rule_list + [Rule24, Rule25, Rule31]
 waves.ContractingTriangleWave.rule_list = waves.TriangleWave.rule_list + [Rule27]
 waves.BarrierTriangleWave.rule_list = waves.ContractingTriangleWave.rule_list + [Rule28]
 waves.ExpandingTriangleWave.rule_list = waves.TriangleWave.rule_list + [Rule29, Rule30]

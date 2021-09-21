@@ -11,15 +11,16 @@ class ImpluseWave(MotiveWave):
     """
     标准的推动5浪
     """
-    def get_sub_wave_type_limit(self):
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
         """
         sub_wave_type_limit = [
             [ImpluseWave, LeadingDiagonalWave, ExtendImpluseWave],
-            [ZigZagWave, FlatWave, TriangleWave, CombinationWave, ZigZagCombinationWave, FlatCombinationWave],
+            [CorrectiveWave],
             [ImpluseWave, ExtendImpluseWave],
-            [ZigZagWave, FlatWave, TriangleWave, CombinationWave, ZigZagCombinationWave, FlatCombinationWave],
+            [ZigZagWave, FlatWave, TriangleWave, CombinationWave],
             [ImpluseWave, EndingDiagonalWave, ExtendImpluseWave],
         ]
         return sub_wave_type_limit
@@ -37,7 +38,8 @@ class LeadingDiagonalWave(DiagonalWave):
     """
     引导斜纹浪
     """
-    def get_sub_wave_type_limit(self):
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
         """
@@ -54,7 +56,8 @@ class EndingDiagonalWave(DiagonalWave):
     """
     终结斜纹浪
     """
-    def get_sub_wave_type_limit(self):
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
         """
@@ -80,13 +83,14 @@ class ZigZagWave(CorrectiveWave):
     # 总是细分成3浪
     min_point_num = 4
     max_point_num = 4
-    def get_sub_wave_type_limit(self):
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
         """
         sub_wave_type_limit = [
             [ImpluseWave, LeadingDiagonalWave],
-            [ZigZagWave, FlatWave, TriangleWave, CombinationWave, ZigZagCombinationWave, FlatCombinationWave],
+            [CorrectiveWave],
             [ImpluseWave, EndingDiagonalWave],
         ]
         return sub_wave_type_limit
@@ -98,7 +102,8 @@ class FlatWave(CorrectiveWave):
     # 总是细分成3浪
     min_point_num = 4
     max_point_num = 4
-    def get_sub_wave_type_limit(self):
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
         """
@@ -109,25 +114,13 @@ class FlatWave(CorrectiveWave):
         ]
         return sub_wave_type_limit
 
-class CombinationWave(CorrectiveWave):
-    """
-    联合型调整浪
-    """
-    pass
-
-class ZigZagCombinationWave(CombinationWave):
-    """
-    锯齿形联合型调整浪
-    """
-    pass
-
 class TriangleWave(CorrectiveWave):
     """
     三角形调整浪
     """
     min_point_num = 6
     max_point_num = 6
-    def get_sub_wave_type_limit(self):
+    def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
         """
@@ -162,23 +155,23 @@ class ContractingTriangleWave(TriangleWave):
     """
     收缩三角形调整浪
     """
-    pass
+    is_concrete_wave = True
 
 class BarrierTriangleWave(TriangleWave):
     """
     屏障三角形调整浪
     """
-    pass
+    is_concrete_wave = True
 
 class ExpandingTriangleWave(TriangleWave):
     """
     扩散三角形调整浪
     """
-    pass
+    is_concrete_wave = True
 
-class FlatCombinationWave(CombinationWave):
+class CombinationWave(CorrectiveWave):
     """
-    平台形联合型调整浪
+    联合型调整浪
     """
     pass
 
@@ -186,10 +179,76 @@ class DoubleCombinationWave(CombinationWave):
     """
     双重三浪
     """
-    pass
+    min_point_num = 4
+    max_point_num = 4
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
+        """
+        子浪类型的可选值列表
+        """
+        sub_wave_type_limit = [
+            [ZigZagWave, FlatWave, CombinationWave],
+            [CorrectiveWave],
+            [ZigZagWave, FlatWave, CombinationWave],
+        ]
+        return sub_wave_type_limit
 
 class TripleCombinationWave(CombinationWave):
     """
     三重三浪
     """
+    min_point_num = 6
+    max_point_num = 6
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
+        """
+        子浪类型的可选值列表
+        """
+        sub_wave_type_limit = [
+            [ZigZagWave, FlatWave, CombinationWave],
+            [ZigZagWave, FlatWave, CombinationWave],
+            [ZigZagWave, FlatWave, CombinationWave],
+            [CorrectiveWave],
+            [ZigZagWave, FlatWave, CombinationWave],
+        ]
+        return sub_wave_type_limit
+
+class ZigZagCombinationWave(CombinationWave):
+    """
+    锯齿形联合型调整浪
+    """
     pass
+
+class ZigZagDoubleCombinationWave(DoubleCombinationWave, ZigZagCombinationWave):
+    """
+    锯齿形双重联合型调整浪
+    """
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
+        """
+        子浪类型的可选值列表
+        """
+        sub_wave_type_limit = [
+            [ZigZagWave],
+            [CorrectiveWave],
+            [ZigZagWave],
+        ]
+        return sub_wave_type_limit
+
+class ZigZagTripleCombinationWave(TripleCombinationWave, ZigZagCombinationWave):
+    """
+    锯齿形三重联合型调整浪
+    """
+    is_concrete_wave = True
+    def get_sub_wave_type_limit():
+        """
+        子浪类型的可选值列表
+        """
+        sub_wave_type_limit = [
+            [ZigZagWave],
+            [CorrectiveWave],
+            [ZigZagWave],
+            [CorrectiveWave],
+            [ZigZagWave],
+        ]
+        return sub_wave_type_limit

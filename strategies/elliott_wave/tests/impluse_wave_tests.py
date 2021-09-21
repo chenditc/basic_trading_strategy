@@ -1,5 +1,6 @@
 import unittest
 import random
+import wave_utils
 from waves import *
 from guides import *
 from rules import *
@@ -286,7 +287,7 @@ class ImpluseWaveTests(BaseWaveTest):
         wave.sub_wave[3] = TriangleWave()
         self.assert_wave_match_guide(ImpluseWaveGuide12, wave, 1)
         
-        wave.sub_wave[3] = FlatCombinationWave()
+        wave.sub_wave[3] = DoubleCombinationWave()
         self.assert_wave_match_guide(ImpluseWaveGuide12, wave, 1)
         
     def test_impluse_wave_guide_13(self):
@@ -310,7 +311,6 @@ class ImpluseWaveTests(BaseWaveTest):
         self.assert_wave_match_guide(ImpluseWaveGuide18, wave, 1)
 
     def test_impluse_wave_combination(self):
-        wave = ImpluseWave([Point(0, 12),Point(1, 15),Point(3, 13),Point(5, 20),Point(8, 17),Point(9, 18)])
-        self.assertEqual(len(wave.get_possible_subwave_combination()), 648)
+        self.assertEqual(len(wave_utils.get_possible_subwave_combination(ImpluseWave)), 972)
 
         
