@@ -2,20 +2,20 @@
   "type": "ZigZagWave",
   "points": [
     {
-      "time_offset": 0,
+      "time_offset": 3,
       "price": 115
     },
     {
-      "time_offset": 5,
-      "price": 108
+      "time_offset": 4,
+      "price": 103
     },
     {
-      "time_offset": 14,
-      "price": 113
+      "time_offset": 10,
+      "price": 111
     },
     {
-      "time_offset": 19,
-      "price": 101
+      "time_offset": 11,
+      "price": 100
     }
   ],
   "sub_wave": [

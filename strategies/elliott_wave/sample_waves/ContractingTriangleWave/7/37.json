@@ -3,27 +3,27 @@
   "points": [
     {
       "time_offset": 0,
-      "price": 117
+      "price": 118
     },
     {
       "time_offset": 5,
-      "price": 102
+      "price": 100
     },
     {
-      "time_offset": 11,
-      "price": 119
+      "time_offset": 6,
+      "price": 116
     },
     {
-      "time_offset": 13,
-      "price": 104
+      "time_offset": 12,
+      "price": 103
     },
     {
-      "time_offset": 16,
-      "price": 114
+      "time_offset": 17,
+      "price": 112
     },
     {
-      "time_offset": 18,
-      "price": 111
+      "time_offset": 19,
+      "price": 106
     }
   ],
   "sub_wave": [
@@ -33,12 +33,12 @@
       "sub_wave": []
     },
     {
-      "type": "ZigZagCombinationWave",
+      "type": "ZigZagWave",
       "points": [],
       "sub_wave": []
     },
     {
-      "type": "ZigZagWave",
+      "type": "ZigZagTripleCombinationWave",
       "points": [],
       "sub_wave": []
     },

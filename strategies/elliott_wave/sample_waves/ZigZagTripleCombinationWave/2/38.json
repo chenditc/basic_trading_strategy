@@ -1,0 +1,56 @@
+{
+  "type": "ZigZagTripleCombinationWave",
+  "points": [
+    {
+      "time_offset": 8,
+      "price": 108
+    },
+    {
+      "time_offset": 10,
+      "price": 106
+    },
+    {
+      "time_offset": 11,
+      "price": 109
+    },
+    {
+      "time_offset": 12,
+      "price": 104
+    },
+    {
+      "time_offset": 15,
+      "price": 113
+    },
+    {
+      "time_offset": 18,
+      "price": 103
+    }
+  ],
+  "sub_wave": [
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "TripleCombinationWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "TripleCombinationWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    }
+  ]
+}

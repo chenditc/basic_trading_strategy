@@ -1,0 +1,38 @@
+{
+  "type": "FlatWave",
+  "points": [
+    {
+      "time_offset": 2,
+      "price": 109
+    },
+    {
+      "time_offset": 6,
+      "price": 113
+    },
+    {
+      "time_offset": 14,
+      "price": 108
+    },
+    {
+      "time_offset": 19,
+      "price": 117
+    }
+  ],
+  "sub_wave": [
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "FlatWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ImpluseWave",
+      "points": [],
+      "sub_wave": []
+    }
+  ]
+}

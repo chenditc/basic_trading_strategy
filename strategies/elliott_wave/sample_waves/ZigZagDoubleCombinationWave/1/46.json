@@ -1,0 +1,38 @@
+{
+  "type": "ZigZagDoubleCombinationWave",
+  "points": [
+    {
+      "time_offset": 6,
+      "price": 104
+    },
+    {
+      "time_offset": 11,
+      "price": 118
+    },
+    {
+      "time_offset": 12,
+      "price": 101
+    },
+    {
+      "time_offset": 17,
+      "price": 117
+    }
+  ],
+  "sub_wave": [
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "TripleCombinationWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "ZigZagWave",
+      "points": [],
+      "sub_wave": []
+    }
+  ]
+}

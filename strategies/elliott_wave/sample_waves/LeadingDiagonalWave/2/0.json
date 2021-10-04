@@ -2,27 +2,27 @@
   "type": "LeadingDiagonalWave",
   "points": [
     {
-      "time_offset": 2,
+      "time_offset": 3,
       "price": 101
     },
     {
-      "time_offset": 7,
-      "price": 111
+      "time_offset": 9,
+      "price": 113
     },
     {
-      "time_offset": 11,
-      "price": 102
+      "time_offset": 12,
+      "price": 105
     },
     {
-      "time_offset": 15,
-      "price": 118
-    },
-    {
-      "time_offset": 16,
-      "price": 106
+      "time_offset": 17,
+      "price": 114
     },
     {
       "time_offset": 18,
+      "price": 106
+    },
+    {
+      "time_offset": 19,
       "price": 119
     }
   ],

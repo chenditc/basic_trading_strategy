@@ -3,19 +3,19 @@
   "points": [
     {
       "time_offset": 3,
-      "price": 118
+      "price": 106
     },
     {
-      "time_offset": 6,
-      "price": 108
-    },
-    {
-      "time_offset": 9,
-      "price": 113
+      "time_offset": 7,
+      "price": 110
     },
     {
       "time_offset": 12,
-      "price": 104
+      "price": 107
+    },
+    {
+      "time_offset": 16,
+      "price": 111
     }
   ],
   "sub_wave": [

@@ -1,0 +1,38 @@
+{
+  "type": "DoubleCombinationWave",
+  "points": [
+    {
+      "time_offset": 2,
+      "price": 119
+    },
+    {
+      "time_offset": 3,
+      "price": 102
+    },
+    {
+      "time_offset": 9,
+      "price": 111
+    },
+    {
+      "time_offset": 19,
+      "price": 103
+    }
+  ],
+  "sub_wave": [
+    {
+      "type": "TripleCombinationWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "TripleCombinationWave",
+      "points": [],
+      "sub_wave": []
+    },
+    {
+      "type": "TripleCombinationWave",
+      "points": [],
+      "sub_wave": []
+    }
+  ]
+}

@@ -2,20 +2,20 @@
   "type": "ZigZagWave",
   "points": [
     {
-      "time_offset": 0,
-      "price": 116
-    },
-    {
-      "time_offset": 4,
-      "price": 104
-    },
-    {
-      "time_offset": 11,
-      "price": 111
+      "time_offset": 12,
+      "price": 115
     },
     {
       "time_offset": 15,
-      "price": 103
+      "price": 110
+    },
+    {
+      "time_offset": 16,
+      "price": 112
+    },
+    {
+      "time_offset": 19,
+      "price": 106
     }
   ],
   "sub_wave": [
@@ -25,7 +25,7 @@
       "sub_wave": []
     },
     {
-      "type": "ZigZagWave",
+      "type": "ExpandingTriangleWave",
       "points": [],
       "sub_wave": []
     },

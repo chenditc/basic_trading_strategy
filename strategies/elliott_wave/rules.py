@@ -8,8 +8,21 @@ class PointNumberRule(Rule):
         if len(wave.point_list) < wave.min_point_num or len(wave.point_list) > wave.max_point_num:
             return False
         return True
+    
+class TimeDifferentRule(Rule):
+    desp = "浪的时间点不能有重合的"
+    def validate(wave: Wave):
+        time_list = [p.time_offset for p in wave.point_list]
+        return len(time_list) == len(set(time_list))
+    
+    def get_next_point_limit(point_list):
+        limit_map = {
+            "time_limit" : (point_list[-1].time_offset, float('inf'))
+        }
+        return limit_map
 
-class SubWaveRule():
+
+class SubWaveRule(Rule):
     desp = ""
     @staticmethod
     def skip_empty_subwave_with_num(skip_sub_wave_num):
@@ -43,6 +56,27 @@ class Rule0(Rule):
             sign_start = diff
         return True
     
+    def validate_point_list(point_list):
+        point_left = point_list[:-1]
+        point_right = point_list[1:]
+        diff_list = [ x.price - y.price for x,y in zip(point_right, point_left)]
+        sign_start = diff_list[0]
+        for diff in diff_list[1:]:
+            if sign_start * diff >= 0:
+                return False
+            sign_start = diff
+        return True
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if point_list[-1].price > point_list[-2].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[-1].price)
+        elif point_list[-1].price < point_list[-2].price:
+            limit_map["price_limit"] = (point_list[-1].price, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule1(SubWaveRule):
     desp = "浪1总是一个推动浪或者斜纹浪"    
     @SubWaveRule.skip_empty_subwave_with_num(0)
@@ -56,6 +90,19 @@ class Rule2(Rule):
         move1 = wave.get_sub_wave_move_abs(0)
         return move2 < move1
 
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 2:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[0].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[0].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule3(SubWaveRule):
     desp = "浪2总是细分成一个锯齿形调整浪 Or 平台型调整浪 Or 联合型调整浪"
     @SubWaveRule.skip_empty_subwave_with_num(1)
@@ -84,6 +131,19 @@ class Rule6(Rule):
         move2 = wave.get_sub_wave_move_abs(1)        
         return move3 > move2
 
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 3:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[1].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[1].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule7(Rule):
     desp = "浪4永远不会进入浪1的价格区域"
     def validate(wave: Wave):
@@ -92,6 +152,19 @@ class Rule7(Rule):
         move3 = wave.get_sub_wave_move_abs(2)
         move2 = wave.get_sub_wave_move_abs(1)
         return move4 < (move3 - move2)
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 4:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[1].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[1].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
         
 class Rule8(SubWaveRule):
     desp = "浪4总是细分成一个锯齿形调整浪 Or 平台型调整浪Or 三角形调整浪 Or 联合型调整浪"
@@ -122,6 +195,19 @@ class Rule11(Rule):
         move3 = wave.get_sub_wave_move_abs(2)
         move2 = wave.get_sub_wave_move_abs(1)
         return move4 > (move3 - move2)
+
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 4:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[1].price)
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (point_list[1].price, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
     
 class Rule12(Rule):
     desp = "浪4永远不会运动过浪2的终点"
@@ -130,6 +216,19 @@ class Rule12(Rule):
         move4 = wave.get_sub_wave_move_abs(3)
         move3 = wave.get_sub_wave_move_abs(2)
         return move4 < move3
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 4:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[2].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[2].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
 
 class Rule13(Rule):
     desp = "浪4总在浪1的价格区域内结束"
@@ -140,12 +239,38 @@ class Rule13(Rule):
         move1 = wave.get_sub_wave_move_abs(0)
         return (move1 - move2 + move3 - move4 > 0) and (move4 > (move3 - move2))
     
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 4:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[0].price, point_list[1].price)
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (point_list[1].price, point_list[0].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule14(Rule):
     desp = "浪3一定会超过浪1的终点"
     def validate(wave: Wave):
         move3 = wave.get_sub_wave_move_abs(2)
         move2 = wave.get_sub_wave_move_abs(1)
         return move3 > move2
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 3:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[1].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[1].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
     
 class Rule15(Rule):
     desp = "连接浪2终点和浪4终点的直线，会与浪1或浪3的直线汇聚或发散，会聚点不应在浪1-4的时间范围内"
@@ -262,6 +387,19 @@ class Rule21(Rule):
             return True
         return False
     
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 5:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[3].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[3].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule22(Rule):
     desp = "浪B不会运动过浪A的起点"
     def validate(wave: Wave):
@@ -269,12 +407,40 @@ class Rule22(Rule):
         move1 = wave.get_sub_wave_move_abs(0)
         return move2 < move1
     
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 2:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (point_list[0].price, float('inf'))
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[0].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule23(Rule):
     desp = "浪B总是至少回撤掉浪A的90%"
     def validate(wave: Wave):
         move2 = wave.get_sub_wave_move_abs(1)
         move1 = wave.get_sub_wave_move_abs(0)
         return move2 > move1 * 0.9
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 2:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            target_point = 0.2 * (point_list[1].price - point_list[0].price) + point_list[0].price
+            limit_map["price_limit"] = (float('-inf'), target_point)
+        elif point_list[0].price > point_list[1].price:
+            target_point = point_list[0].price - 0.2 * (point_list[0].price - point_list[1].price)
+            limit_map["price_limit"] = (target_point, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
     
 class Rule24(SubWaveRule):
     desp = "至少4个是锯齿形调整浪，或锯齿形联合调整浪"
@@ -304,6 +470,19 @@ class Rule25(Rule):
                 return True
         return False
     
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if point_list[-2].price < point_list[-1].price:
+            max_price = max([p.price for p in point_list[:-1]])
+            limit_map["price_limit"] = (float('-inf'), max_price)
+        elif point_list[-2].price > point_list[-1].price:
+            min_price = min([p.price for p in point_list[:-1]])
+            limit_map["price_limit"] = (min_price, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule26(Rule):
     desp = "浪E的终点前对前一个更大一级的波浪产生净回撤"
     def validate(wave:Wave):
@@ -311,6 +490,20 @@ class Rule26(Rule):
             return wave.point_list[-1].price > wave.point_list[0].price
         else:
             return wave.point_list[-1].price < wave.point_list[0].price
+        
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if len(point_list) != 5:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[0].price)
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (point_list[0].price, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
         
 class Rule27(Rule):
     desp = "浪C不会超过浪A的终点，浪D不会超过浪B的终点，浪E不会超过浪C的终点"
@@ -322,12 +515,34 @@ class Rule27(Rule):
         move_e = wave.get_sub_wave_move_abs(4)
         return (move_c < move_b and move_d < move_c and move_e < move_d)
 
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if len(point_list) < 3:
+            return limit_map
+        
+        if point_list[-2].price < point_list[-1].price:
+            limit_map["price_limit"] = (point_list[-2].price, float('inf'))
+        elif point_list[-2].price > point_list[-1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[-2].price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule28(Rule):
     desp = "浪B与浪D在同一水平位置结束"
     def validate(wave:Wave):
         move_c = wave.get_sub_wave_move_abs(2)
         move_d = wave.get_sub_wave_move_abs(3)
         return abs(move_c - move_d) < 0.01
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if len(point_list) != 4:
+            return limit_map
+        limit_map["price_limit"] = (point_list[2].price * 0.9, point_list[2].price * 1.1)
+        return limit_map
     
 class Rule29(Rule):
     desp = "浪C超过浪A的终点，浪D超过浪B的终点，浪E超过浪C的终点"
@@ -339,6 +554,20 @@ class Rule29(Rule):
         move_e = wave.get_sub_wave_move_abs(4)
         return (move_c > move_b and move_d > move_c and move_e > move_d)
 
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if len(point_list) < 3:
+            return limit_map
+        
+        if point_list[-2].price < point_list[-1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[-2].price)
+        elif point_list[-2].price > point_list[-1].price:
+            limit_map["price_limit"] = (point_list[-2].price, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
 class Rule30(Rule):
     desp = "浪B、C、D 都至少回撤100%，最多回撤150%"
     def validate(wave:Wave):
@@ -348,6 +577,22 @@ class Rule30(Rule):
         move_d = wave.get_sub_wave_move_abs(3)
         move_e = wave.get_sub_wave_move_abs(4)
         return (move_c < move_b*1.5 and move_d < move_c*1.5 and move_e < move_d*1.5)
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        prev_move = abs(point_list[-2].price - point_list[-1].price)
+        if point_list[-2].price < point_list[-1].price:
+            max_price = point_list[-1].price - prev_move
+            min_price = point_list[-1].price - prev_move * 1.5
+            limit_map["price_limit"] = (min_price, max_price)
+        elif point_list[-2].price > point_list[-1].price:
+            min_price = point_list[-1].price + prev_move
+            max_price = point_list[-1].price + prev_move * 1.5
+            limit_map["price_limit"] = (min_price, max_price)
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
     
 class Rule31(SubWaveRule):
     desp = "最多只有一个复杂浪"
@@ -360,10 +605,10 @@ class Rule31(SubWaveRule):
                 complex_wave_num += 1
         return complex_wave_num <= 1
 
-waves.Wave.rule_list = [PointNumberRule, Rule0]
-waves.ImpluseWave.rule_list = [PointNumberRule, Rule0, Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9]
+waves.Wave.rule_list = [PointNumberRule, TimeDifferentRule, Rule0]
+waves.ImpluseWave.rule_list = waves.Wave.rule_list + [Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9]
 
-waves.DiagonalWave.rule_list = [PointNumberRule, Rule0, Rule11, Rule2, Rule12, Rule13, Rule14, Rule15, Rule16, Rule17, Rule18]
+waves.DiagonalWave.rule_list = waves.Wave.rule_list + [Rule11, Rule2, Rule12, Rule13, Rule14, Rule15, Rule16, Rule17, Rule18]
 waves.EndingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule19]
 waves.LeadingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule20, Rule21]
 

@@ -2,9 +2,12 @@ import math
 import rules
 import random
 import waves
+import time
 import basic_types
 from pathlib import Path
 from copy import copy
+import os
+import json
 
 def load_wave_from_dict(wave_dict):
     if wave_dict is None:
@@ -90,9 +93,9 @@ def get_possible_subwave_combination(wave_type):
     for wave_type_list in wave_type.get_sub_wave_type_limit():
         new_combinations = []
         expanded_wave_type_list = expand_wave_type_to_concrete(wave_type_list)
-        for wave_type in expanded_wave_type_list:
+        for sub_wave_type in expanded_wave_type_list:
             for prev_comb in combinations:
-                new_combinations.append(prev_comb + [wave_type])
+                new_combinations.append(prev_comb + [sub_wave_type])
         combinations = new_combinations
     # Filter by rule
     valid_comb = []
@@ -118,6 +121,55 @@ def generate_random_points(point_num, time_offset_list, price_list):
     point_list = [ basic_types.Point(time_offset, price) for time_offset, price in zip(time_list, price_list)]
     return point_list
 
+def find_matching_wave_for_guide(target_guide, target_score, target_wave_type, wave_size = 20, iteration=50000):
+    min_rules_wave = None
+    min_rules_num = 100
+    print(target_wave_type.rule_list)
+    for i in range(iteration):
+        wave_point_num = random.randint(target_wave_type.min_point_num, target_wave_type.max_point_num)
+        point_list = generate_random_points(point_num=wave_point_num, 
+                                            time_offset_list=list(range(wave_size)),
+                                            price_list=list(range(100, 100+wave_size)))
+        wave = target_wave_type(point_list)
+        wave.sub_wave[2] = waves.ExtendImpluseWave()
+        if not wave.is_valid():
+            continue
+        if target_guide.get_score(wave) != target_score:
+            continue
+        wave.show_line_chart()
+        score_reason_dict = wave.get_score_contribution()
+        print(wave_utils.get_run_code_for_wave(wave))
+        for score_reason, score in score_reason_dict.items():
+            print(score, score_reason)
+        break
+    print("Not finding anything")
+    
+def generate_test_case_for_rule(rule,
+                                target_wave_type, 
+                                 wave_size = 10,
+                                 iteration=50000):
+    print(target_wave_type.rule_list)
+    min_rules_wave = None
+    min_rules_num = 100
+    for i in range(iteration):
+        wave_point_num = random.randint(target_wave_type.min_point_num, target_wave_type.max_point_num)
+        
+        point_list = generate_random_points(point_num=wave_point_num, 
+                                            time_offset_list=list(range(wave_size)),
+                                            price_list=list(range(100, 100+wave_size)))
+        wave = target_wave_type(point_list)
+
+        if not wave.is_valid():
+            rules = wave.get_not_valid_rule()
+            if rule in rules:
+                if len(rules) < min_rules_num:
+                    min_rules_num = len(rules)
+                    min_rules_wave = wave
+            
+    min_rules_wave.show_line_chart()
+    print(rule.desp)
+    print(wave_utils.get_run_code_for_wave(min_rules_wave))
+
 def get_most_possible_subwave_combination(wave):
     """
     根据该浪可能有的子浪类型，计算添加子浪形态后，符合规则且分数最高的子浪形态组合列表
@@ -137,13 +189,17 @@ def get_most_possible_subwave_combination(wave):
 
 def generate_wave_point_list(target_wave_type, 
                              wave_size = 20,
-                             iteration=50000):
+                             iteration=50000,
+                             total_wave_num=50,
+                             time_limit=30):
     assert(len(target_wave_type.rule_list) > 0)
-    random.seed(100)
+    start_time = time.time()
     
     max_score = -1
     max_score_wave_list = []
     for i in range(iteration):
+        if time.time() > start_time + time_limit:
+            break
         wave_point_num = random.randint(target_wave_type.min_point_num, target_wave_type.max_point_num)
         
         point_list = generate_random_points(point_num=wave_point_num, 
@@ -157,12 +213,12 @@ def generate_wave_point_list(target_wave_type,
         sub_wave_score, sub_wave_comb_list = get_most_possible_subwave_combination(wave)
         wave.init_subwave_with_types(sub_wave_comb_list[0])
         if sub_wave_score < max_score:
-            continue
-        
+            continue        
         if sub_wave_score > max_score:
             max_score = sub_wave_score
             max_score_wave_list = []
-        
+        if len(max_score_wave_list) > total_wave_num:
+            continue
         max_score_wave_list.append(wave)
     return max_score, max_score_wave_list
 
@@ -181,12 +237,71 @@ def print_wave_info(wave):
         
 def generate_and_save_max_score_wave(target_wave_type, 
                                      wave_size=20,
-                                     iteration=50000):
-    max_score, max_score_wave_list = generate_wave_point_list(target_wave_type = target_wave_type, wave_size=wave_size, iteration=iteration)
+                                     iteration=50000,
+                                     total_wave_num=50,
+                                     time_limit=30):
+    max_score, max_score_wave_list = generate_wave_point_list(target_wave_type = target_wave_type, wave_size=wave_size, iteration=iteration, time_limit=time_limit)
     print(f"Max score is {max_score}")
     target_directory = "sample_waves/{0}/{1}".format(target_wave_type.__name__, max_score)
     Path(target_directory).mkdir(parents=True, exist_ok=True)
-    for index, wave in enumerate(max_score_wave_list):
+    for index, wave in enumerate(max_score_wave_list[:total_wave_num]):
         print_wave_info(wave)
         target_file_path = "{0}/{1}.json".format(target_directory, index)
         save_wave_json_to_file(wave, target_file_path)
+        
+def generate_from_sample_wave(target_wave_type):
+    sample_wave_score_list_path = f"sample_waves/{target_wave_type.__name__}/"
+    sample_wave_score_list = [int(x) for x in os.listdir(sample_wave_score_list_path)]
+    max_score = max(sample_wave_score_list)
+    sample_file_dir = f"sample_waves/{target_wave_type.__name__}/{max_score}/"
+    sample_file_list = os.listdir(sample_file_dir)
+    picked_file = random.choice(sample_file_list)
+    
+    with open(sample_file_dir + picked_file, "r") as wave_json_file:
+        return json.loads(wave_json_file.read())
+
+def scale_wave_to_time_and_price(wave, min_time, max_time, first_price, last_price):
+    new_point_list = []
+    base_time = wave.point_list[0].time_offset
+    base_price = wave.point_list[0].price
+    time_scale = (max_time - min_time) / (wave.point_list[-1].time_offset - base_time)
+    price_scale = (last_price - first_price) / (wave.point_list[-1].price - base_price)
+    
+    for point in wave.point_list:
+        new_time_offset = (point.time_offset - base_time) * time_scale + min_time
+        new_price = (point.price - base_price) * price_scale + first_price
+        point.price = new_price
+        point.time_offset = int(new_time_offset)
+
+        
+def find_wave_for_scale(wave_type, min_time, max_time, first_price, last_price, try_times=200, show_chart=True):
+    for i in range(try_times):
+        wave_dict = generate_from_sample_wave(wave_type)
+        wave = load_wave_from_dict(wave_dict)
+        if show_chart:
+            wave.show_line_chart()
+
+        scale_wave_to_time_and_price(wave, min_time, max_time, first_price, last_price)
+        if show_chart:
+            wave.show_line_chart()
+        if not wave.is_valid():
+            continue
+        return wave
+
+def expand_sub_wave_to_points(base_wave):
+    for index in range(1, len(base_wave.point_list)):
+        start_point = base_wave.point_list[index-1]
+        end_point = base_wave.point_list[index]
+        new_sub_wave = find_wave_for_scale(type(base_wave.sub_wave[index-1]), 
+                                           min_time=start_point.time_offset, 
+                                           max_time=end_point.time_offset,
+                                           first_price=start_point.price,
+                                           last_price=end_point.price, 
+                                           try_times=20,
+                                           show_chart=False)
+        if new_sub_wave:
+            base_wave.sub_wave[index-1] = new_sub_wave
+            if new_sub_wave.point_list[-1].time_offset - new_sub_wave.point_list[0].time_offset > 4:
+                expand_sub_wave_to_points(new_sub_wave)
+                
+                

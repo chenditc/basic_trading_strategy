@@ -3,6 +3,7 @@ import plotly.express as px
 import pandas as pd
 import json
 import math
+import copy
 
 class NotValidWaveException(Exception):
     def __init__(self, Rule):
@@ -23,6 +24,9 @@ class Point():
         }
     
     def __str__(self):
+        return str(self.to_dict())
+    
+    def __repr__(self):
         return str(self.to_dict())
     
     def get_run_code(self):
@@ -67,8 +71,19 @@ class Wave(ABC):
         class_name = type(self).__name__
         return f"{class_name}([" + ",".join(point_code_list) + "])"
     
+    def get_all_points(self):
+        """
+            获取所有点，包括子浪的
+        """
+        point_list = copy.copy(self.point_list)
+        for sub_wave in self.sub_wave:
+            if sub_wave:
+                point_list += sub_wave.get_all_points()[1:-1]
+        sorted_list = sorted(point_list, key=lambda x: x.time_offset)
+        return sorted_list
+    
     def show_line_chart(self): 
-        df = pd.DataFrame([x.to_dict() for x in self.point_list])
+        df = pd.DataFrame([x.to_dict() for x in self.get_all_points()])
         fig = px.line(df, x="time_offset", y="price", title='wave')
         fig.update_layout(updatemenus = list([
             dict(active=1,
@@ -163,6 +178,11 @@ class Rule():
     def validate(wave: Wave):
         raise NotImplementedError
         
+    def get_next_point_limit(point_list):
+        """
+        get a map of point limit
+        """
+        return {}
 
 class Guide():
     desp = ""
