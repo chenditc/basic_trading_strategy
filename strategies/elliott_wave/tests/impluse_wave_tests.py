@@ -136,6 +136,18 @@ class ImpluseWaveTests(BaseWaveTest):
         wave.sub_wave[0].is_extend_wave = True
         self.assert_wave_not_match_rule(Rule10, wave)
 
+    def test_rule33(self):
+        wave = ImpluseWave([Point(0, 12),Point(1, 15),Point(3, 13),Point(5, 20),Point(8, 17),Point(9, 18)])
+        wave.sub_wave[0] = ImpluseWave()
+        wave.sub_wave[2] = ImpluseWave()
+        wave.sub_wave[4] = ImpluseWave()
+        
+        wave.sub_wave[2].is_extend_wave = True
+        self.assert_wave_match_rule(Rule33, wave)
+        
+        wave.sub_wave[4].is_extend_wave = True
+        self.assert_wave_not_match_rule(Rule33, wave)
+        
     def test_impluse_wave_guide_01(self):
         wave = ImpluseWave([Point(0, 19),Point(2, 17),Point(3, 18),Point(7, 10),Point(8, 16),Point(9, 11)])
         self.assert_valid_wave(wave)

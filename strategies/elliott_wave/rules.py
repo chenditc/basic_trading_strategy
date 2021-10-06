@@ -285,6 +285,14 @@ class Rule15(Rule):
         if converge_time > wave.point_list[0].time_offset and converge_time < wave.point_list[3].time_offset:
             return False
         return True
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 4:
+            return limit_map
+        
+        # TODO: 连接点1-2 以及点 2-3，下一个点应该在两条直线的夹角间
+        return limit_map
         
 class Rule16(Rule):
     desp = "连接浪2终点和浪4终点的直线，会与浪1或浪3的直线汇聚或发散，如果是收缩斜纹浪，浪5短于浪3短于浪1，浪4短于浪2"
@@ -311,6 +319,37 @@ class Rule16(Rule):
             return False
         return True
     
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 5:
+            return limit_map
+        
+        wave = Wave(point_list)
+        converge_time, converge_price = wave_utils.get_points_line_converge_point(point_list[1],
+                                                                   point_list[3],
+                                                                   point_list[2],
+                                                                   point_list[4])
+        if converge_time is None:
+            # 平行
+            return limit_map
+        is_converge = converge_time > wave.point_list[4].time_offset
+        if not is_converge:
+            # 发散，不适用该 rule
+            return limit_map
+        
+        # 浪3短于浪1
+        if wave.get_sub_wave_time(2) >= wave.get_sub_wave_time(0):
+            limit_map["price_limit"] = (0, 0)
+            return limit_map
+        # 浪4短于浪2
+        if wave.get_sub_wave_time(3) >= wave.get_sub_wave_time(1):
+            limit_map["price_limit"] = (0, 0)
+            return limit_map
+        
+        # 浪5短于浪3
+        limit_map["time_limit"] = (0, wave.point_list[4].time_offset + wave.get_sub_wave_time(3))
+        return limit_map
+    
 class Rule17(Rule):
     desp = "连接浪2终点和浪4终点的直线，会与浪1或浪3的直线汇聚或发散，如果是扩散斜纹浪，浪5长于浪3长于浪1，浪4长于浪2"
     def validate(wave: Wave):
@@ -336,6 +375,37 @@ class Rule17(Rule):
             return False
         return True
     
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 5:
+            return limit_map
+        
+        converge_time, converge_price = wave_utils.get_points_line_converge_point(point_list[1],
+                                                                   point_list[3],
+                                                                   point_list[2],
+                                                                   point_list[4])
+        if converge_time is None:
+            # 平行
+            return limit_map
+        is_converge = converge_time > point_list[4].time_offset
+        if is_converge:
+            # 收缩，不适用该 rule
+            return limit_map
+        
+        wave = Wave(point_list)
+        # 浪3长于浪1
+        if wave.get_sub_wave_time(2) <= wave.get_sub_wave_time(0):
+            limit_map["price_limit"] = (0, 0)
+            return limit_map
+        # 浪4长于浪2
+        if wave.get_sub_wave_time(3) <= wave.get_sub_wave_time(1):
+            limit_map["price_limit"] = (0, 0)
+            return limit_map
+        
+        # 浪5长于浪3
+        limit_map["time_limit"] = (wave.point_list[4].time_offset + wave.get_sub_wave_time(3), float('inf'))
+        return limit_map
+    
 class Rule18(Rule):
     desp = "连接浪2终点和浪4终点的直线，会与浪1或浪3的直线汇聚或发散，如果是扩散斜纹浪，浪5终点总是超越浪3终点"
     def validate(wave: Wave):
@@ -353,6 +423,29 @@ class Rule18(Rule):
         move5 = wave.get_sub_wave_move_abs(4)
         move4 = wave.get_sub_wave_move_abs(3)
         return move5 > move4
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        if len(point_list) != 5:
+            return limit_map
+        
+        converge_time, converge_price = wave_utils.get_points_line_converge_point(point_list[1],
+                                                                   point_list[3],
+                                                                   point_list[2],
+                                                                   point_list[4])
+        if converge_time is None:
+            # 平行
+            return limit_map
+        is_converge = converge_time > point_list[4].time_offset
+        if is_converge:
+            # 收缩，不适用该 rule
+            return limit_map
+        
+        if (point_list[3].price > point_list[4].price):
+            limit_map["price_limit"] = (point_list[3].price, float('inf'))
+        else:
+            limit_map["price_limit"] = (float('-inf'), point_list[3].price)
+        return limit_map
     
 class Rule19(SubWaveRule):
     desp = "所有子浪都是锯齿形调整浪"
@@ -474,10 +567,10 @@ class Rule25(Rule):
         limit_map = {}
         
         if point_list[-2].price < point_list[-1].price:
-            max_price = max([p.price for p in point_list[:-1]])
+            max_price = max([p.price for p in point_list])
             limit_map["price_limit"] = (float('-inf'), max_price)
         elif point_list[-2].price > point_list[-1].price:
-            min_price = min([p.price for p in point_list[:-1]])
+            min_price = min([p.price for p in point_list])
             limit_map["price_limit"] = (min_price, float('inf'))
         else:
             limit_map["price_limit"] = (0, 0)
@@ -580,6 +673,8 @@ class Rule30(Rule):
     
     def get_next_point_limit(point_list):
         limit_map = {}
+        if len(point_list) < 3:
+            return limit_map
         
         prev_move = abs(point_list[-2].price - point_list[-1].price)
         if point_list[-2].price < point_list[-1].price:
@@ -604,17 +699,54 @@ class Rule31(SubWaveRule):
             if not isinstance(sub_wave, waves.ZigZagWave):
                 complex_wave_num += 1
         return complex_wave_num <= 1
+    
+class Rule32(Rule):
+    desp = "浪C的终点前对前一个更大一级的波浪产生净回撤"
+    def validate(wave:Wave):
+        if wave.first_sub_wave_trend:
+            return wave.point_list[-1].price > wave.point_list[0].price
+        else:
+            return wave.point_list[-1].price < wave.point_list[0].price
+        
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if len(point_list) != 3:
+            return limit_map
+        
+        if point_list[0].price < point_list[1].price:
+            limit_map["price_limit"] = (float('-inf'), point_list[0].price)
+        elif point_list[0].price > point_list[1].price:
+            limit_map["price_limit"] = (point_list[0].price, float('inf'))
+        else:
+            limit_map["price_limit"] = (0, 0)
+        return limit_map
+    
+class Rule33(Rule):
+    desp = "延长浪的时间长度不应是推动浪中最短的"
+    def validate(wave:Wave):
+        wave_length_list = [ wave.get_sub_wave_time(i) for i in range(5) if isinstance(wave.sub_wave[i], waves.ImpluseWave)]
+        if len(wave_length_list) == 0:
+            return True
+        min_wave_length = min(wave_length_list)
+        for i in range(5):
+            if not wave.sub_wave[i] or not wave.sub_wave[i].is_extend_wave:
+                continue
+            wave_time = wave.get_sub_wave_time(i)
+            if wave_time == min_wave_length:
+                return False
+        return True
 
 waves.Wave.rule_list = [PointNumberRule, TimeDifferentRule, Rule0]
-waves.ImpluseWave.rule_list = waves.Wave.rule_list + [Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9]
+waves.ImpluseWave.rule_list = waves.Wave.rule_list + [Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9, Rule33]
 
 waves.DiagonalWave.rule_list = waves.Wave.rule_list + [Rule11, Rule2, Rule12, Rule13, Rule14, Rule15, Rule16, Rule17, Rule18]
 waves.EndingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule19]
 waves.LeadingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule20, Rule21]
 
-waves.CorrectiveWave.rule_list = waves.CorrectiveWave.rule_list + [Rule26]
-waves.ZigZagWave.rule_list = waves.CorrectiveWave.rule_list + [Rule22]
-waves.FlatWave.rule_list = waves.CorrectiveWave.rule_list + [Rule23]
+waves.CorrectiveWave.rule_list = waves.Wave.rule_list + [Rule26]
+waves.ZigZagWave.rule_list = waves.CorrectiveWave.rule_list + [Rule22, Rule32]
+waves.FlatWave.rule_list = waves.CorrectiveWave.rule_list + [Rule23, Rule32]
 waves.TriangleWave.rule_list = waves.CorrectiveWave.rule_list + [Rule24, Rule25, Rule31]
 waves.ContractingTriangleWave.rule_list = waves.TriangleWave.rule_list + [Rule27]
 waves.BarrierTriangleWave.rule_list = waves.ContractingTriangleWave.rule_list + [Rule28]
