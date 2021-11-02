@@ -116,7 +116,7 @@ def handlebar(ContextInfo):
 			print(f"Place ipo order for {stock_code}")
 			#order_shares(stock_code, stock_info["maxPurchaseNum"], ContextInfo, ContextInfo.accID)
 			print(stock_info)
-			passorder(23,1101,ContextInfo.accID,stock_code,5,stock_info["issuePrice"],stock_info["maxPurchaseNum"],1,ContextInfo)
+			passorder(23,1101,ContextInfo.accID,stock_code,11,stock_info["issuePrice"],stock_info["maxPurchaseNum"],1,ContextInfo)
 	
 	if today_date not in ContextInfo.strategy_obj.new_stock_tracking_complete_map:
 		# 查看当前持仓情况，获取次新股列表
