@@ -5,6 +5,12 @@ import json
 import math
 import copy
 
+from enum import Enum
+class OptimumType(Enum):
+    UNKNOWN = 0
+    MAXIMUM = 1
+    MINIMUM = 2
+
 class NotValidWaveException(Exception):
     def __init__(self, Rule):
         self.Rule = Rule
@@ -13,14 +19,22 @@ class NotValidWaveException(Exception):
         return self.Rule.desp
 
 class Point():
-    def __init__(self, time_offset: int, price: float):
+    def __init__(self, time_offset: int, price: float, vol: int=0, optimum_type=OptimumType.UNKNOWN):
         self.time_offset = time_offset
         self.price = price
+        self.vol = vol
+        self.optimum_type = optimum_type
+        
+    @classmethod
+    def from_dict(cls, input_dict):
+        return cls(**input_dict)
         
     def to_dict(self):
         return {
             'time_offset': self.time_offset,
             'price': self.price,
+            'vol': self.vol,
+            'optimum': self.optimum_type
         }
     
     def __str__(self):
@@ -30,7 +44,7 @@ class Point():
         return str(self.to_dict())
     
     def get_run_code(self):
-        return f"Point({self.time_offset}, {self.price})"
+        return f"Point({self.time_offset}, {self.price}, {self.vol})"
         
 class Wave(ABC):
     rule_list: list = [] #该类浪需要满足的规则列表
@@ -57,12 +71,6 @@ class Wave(ABC):
             return 1
         return 0
         
-    def get_sub_wave_type_limit(self):
-        """
-        子浪类型的可选值列表
-        """
-        return []
-    
     def init_subwave_with_types(self, subwave_types):
         self.sub_wave = [ subwave_type() for subwave_type in subwave_types ]
         
@@ -155,6 +163,20 @@ class Wave(ABC):
             total_score += weight * guide.get_score(self)
         return total_score
     
+    def get_score_info(self):
+        total_score_info = {
+            "min" : 0,
+            "max" : 0,
+            "improve_sub_wave_type" : []
+        }
+        for guide, weight in self.guide_dict.items():
+            curr_score_info = guide.get_score_info(self)
+            total_score_info["min"] += curr_score_info["min"]
+            total_score_info["max"] += curr_score_info["max"]
+            total_score_info["improve_sub_wave_type"] += curr_score_info["improve_sub_wave_type"]
+        
+        return total_score_info
+    
     def get_score_contribution(self):
         """
         看当前的浪分布满足指南的列表
@@ -186,5 +208,16 @@ class Rule():
 
 class Guide():
     desp = ""
-    def get_score(wave:Wave):
+    @classmethod
+    def get_score(cls, wave:Wave):
         pass
+    
+    @classmethod
+    def get_score_info(cls, wave: Wave):
+        curr_score = cls.get_score(wave)
+        score_info = {
+            "min" : curr_score,
+            "max" : curr_score,
+            "improve_sub_wave_type": []
+        }
+        return score_info

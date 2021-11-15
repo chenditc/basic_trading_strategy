@@ -1,6 +1,7 @@
 from basic_types import *
 import waves
 import wave_utils
+import math
 
 class PointNumberRule(Rule):
     desp = "不满足初始点个数要求"
@@ -69,12 +70,12 @@ class Rule0(Rule):
     
     def get_next_point_limit(point_list):
         limit_map = {}
-        if point_list[-1].price > point_list[-2].price:
+        
+        # 如果是第一个点，且第一个点是极大值，那么下一个点应该是小于他的。反之亦然      
+        if point_list[-1].optimum_type == OptimumType.MAXIMUM:
             limit_map["price_limit"] = (float('-inf'), point_list[-1].price)
-        elif point_list[-1].price < point_list[-2].price:
+        elif point_list[-1].optimum_type == OptimumType.MINIMUM:
             limit_map["price_limit"] = (point_list[-1].price, float('inf'))
-        else:
-            limit_map["price_limit"] = (0, 0)
         return limit_map
     
 class Rule1(SubWaveRule):
@@ -117,6 +118,23 @@ class Rule4(Rule):
         time_period_list = [ a.time_offset - b.time_offset for a, b in zip(wave_end_point, wave_start_point)]
         min_time = min(time_period_list)
         return time_period_list[2] > min_time
+    
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        # 只对第5浪有限制，如果前4浪中，浪3不是最短的，则不用考虑，直接返回
+        if len(point_list) != 5:
+            return limit_map
+        
+        wave_start_point = point_list[:-1]
+        wave_end_point = point_list[1:]
+        time_period_list = [ a.time_offset - b.time_offset for a, b in zip(wave_end_point, wave_start_point)]
+        min_time = min(time_period_list)
+        if time_period_list[2] > min_time:
+            return limit_map
+        
+        limit_map["time_limit"] = (0, point_list[-1].time_offset + min_time - 1)
+        return limit_map
                 
 class Rule5(SubWaveRule):
     desp = "浪3总是一个推动浪"
@@ -288,10 +306,20 @@ class Rule15(Rule):
     
     def get_next_point_limit(point_list):
         limit_map = {}
-        if len(point_list) != 4:
+        if len(point_list) != 5:
             return limit_map
         
-        # TODO: 连接点1-2 以及点 2-3，下一个点应该在两条直线的夹角间
+        converge_time, converge_price = wave_utils.get_points_line_converge_point(point_list[1],
+                                                           point_list[3],
+                                                           point_list[2],
+                                                           point_list[4])
+        if converge_time is None:
+            # 平行
+            limit_map["price_limit"] = (0, 0)
+        if converge_time > point_list[0].time_offset and converge_time < point_list[3].time_offset:
+            limit_map["price_limit"] = (0, 0)
+        
+        # TODO: 连接点1-2 以及点 1-3，下一个点应该在两条直线的夹角间
         return limit_map
         
 class Rule16(Rule):
@@ -347,7 +375,7 @@ class Rule16(Rule):
             return limit_map
         
         # 浪5短于浪3
-        limit_map["time_limit"] = (0, wave.point_list[4].time_offset + wave.get_sub_wave_time(3))
+        limit_map["time_limit"] = (0, wave.point_list[4].time_offset + wave.get_sub_wave_time(2) - 1)
         return limit_map
     
 class Rule17(Rule):
@@ -403,7 +431,7 @@ class Rule17(Rule):
             return limit_map
         
         # 浪5长于浪3
-        limit_map["time_limit"] = (wave.point_list[4].time_offset + wave.get_sub_wave_time(3), float('inf'))
+        limit_map["time_limit"] = (wave.point_list[4].time_offset + wave.get_sub_wave_time(2) + 1, float('inf'))
         return limit_map
     
 class Rule18(Rule):
@@ -525,11 +553,15 @@ class Rule23(Rule):
         if len(point_list) != 2:
             return limit_map
         
+        temp_wave = Wave(point_list)
+        move1 = temp_wave.get_sub_wave_move_abs(0)
+        min_move2 = 0.9 * move1
+        
         if point_list[0].price < point_list[1].price:
-            target_point = 0.2 * (point_list[1].price - point_list[0].price) + point_list[0].price
+            target_point = math.exp(math.log(point_list[1].price) - min_move2)
             limit_map["price_limit"] = (float('-inf'), target_point)
         elif point_list[0].price > point_list[1].price:
-            target_point = point_list[0].price - 0.2 * (point_list[0].price - point_list[1].price)
+            target_point = math.exp(math.log(point_list[1].price) + min_move2)
             limit_map["price_limit"] = (target_point, float('inf'))
         else:
             limit_map["price_limit"] = (0, 0)
@@ -566,6 +598,9 @@ class Rule25(Rule):
     def get_next_point_limit(point_list):
         limit_map = {}
         
+        if len(point_list) < 2:
+            return {}
+        
         if point_list[-2].price < point_list[-1].price:
             max_price = max([p.price for p in point_list])
             limit_map["price_limit"] = (float('-inf'), max_price)
@@ -590,9 +625,9 @@ class Rule26(Rule):
         if len(point_list) != 5:
             return limit_map
         
-        if point_list[0].price < point_list[1].price:
+        if point_list[0].price > point_list[1].price:
             limit_map["price_limit"] = (float('-inf'), point_list[0].price)
-        elif point_list[0].price > point_list[1].price:
+        elif point_list[0].price < point_list[1].price:
             limit_map["price_limit"] = (point_list[0].price, float('inf'))
         else:
             limit_map["price_limit"] = (0, 0)
@@ -627,7 +662,7 @@ class Rule28(Rule):
     def validate(wave:Wave):
         move_c = wave.get_sub_wave_move_abs(2)
         move_d = wave.get_sub_wave_move_abs(3)
-        return abs(move_c - move_d) < 0.01
+        return abs(move_c - move_d) < 0.1
     
     def get_next_point_limit(point_list):
         limit_map = {}
@@ -714,9 +749,9 @@ class Rule32(Rule):
         if len(point_list) != 3:
             return limit_map
         
-        if point_list[0].price < point_list[1].price:
+        if point_list[0].price > point_list[1].price:
             limit_map["price_limit"] = (float('-inf'), point_list[0].price)
-        elif point_list[0].price > point_list[1].price:
+        elif point_list[0].price < point_list[1].price:
             limit_map["price_limit"] = (point_list[0].price, float('inf'))
         else:
             limit_map["price_limit"] = (0, 0)
@@ -736,13 +771,44 @@ class Rule33(Rule):
             if wave_time == min_wave_length:
                 return False
         return True
+    
+class Rule34(Rule):
+    desp = "浪的峰谷应对应最大值和最小值，即峰点是最大值的点，谷点是最小值的点"
+    
+    def get_optimum_func(target_optimum_type):
+        def next_point_is_target_optimum(next_point, *args, **kargs):
+            return next_point.optimum_type == target_optimum_type
+        return next_point_is_target_optimum
+    
+    def validate(wave:Wave):
+        for i in range(len(wave.point_list)):
+            if wave.point_list[i].optimum_type == OptimumType.UNKNOWN:
+                continue
+            adjacent_point_index = i+1 if i == 0 else i-1
+            if wave.point_list[i].price > wave.point_list[adjacent_point_index].price:
+                correct_optimum_type = OptimumType.MAXIMUM
+            else:
+                correct_optimum_type = OptimumType.MINIMUM
+                
+            if wave.point_list[i].optimum_type != correct_optimum_type:
+                return False
+        return True
 
-waves.Wave.rule_list = [PointNumberRule, TimeDifferentRule, Rule0]
-waves.ImpluseWave.rule_list = waves.Wave.rule_list + [Rule1, Rule2, Rule3, Rule4, Rule5, Rule6, Rule7, Rule8, Rule9, Rule33]
+    def get_next_point_limit(point_list):
+        limit_map = {}
+        
+        if point_list[-1].optimum_type == OptimumType.MAXIMUM:
+            limit_map["limit_func"] = Rule34.get_optimum_func(OptimumType.MINIMUM)
+        elif point_list[-1].optimum_type == OptimumType.MINIMUM:
+            limit_map["limit_func"] = Rule34.get_optimum_func(OptimumType.MAXIMUM)
+        return limit_map
+                    
+waves.Wave.rule_list = [PointNumberRule, TimeDifferentRule, Rule0, Rule34]
+waves.ImpluseWave.rule_list = waves.Wave.rule_list + [Rule2, Rule4, Rule6, Rule7, Rule33]
 
 waves.DiagonalWave.rule_list = waves.Wave.rule_list + [Rule11, Rule2, Rule12, Rule13, Rule14, Rule15, Rule16, Rule17, Rule18]
-waves.EndingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule19]
-waves.LeadingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule20, Rule21]
+waves.EndingDiagonalWave.rule_list = waves.DiagonalWave.rule_list
+waves.LeadingDiagonalWave.rule_list = waves.DiagonalWave.rule_list + [Rule21]
 
 waves.CorrectiveWave.rule_list = waves.Wave.rule_list + [Rule26]
 waves.ZigZagWave.rule_list = waves.CorrectiveWave.rule_list + [Rule22, Rule32]

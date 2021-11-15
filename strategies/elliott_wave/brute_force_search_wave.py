@@ -40,4 +40,5 @@ def brute_force_search_all_point_comb(input_point_list):
         logger.info(f"Finished search {wave_type}, found {valid_wave_num}")
 
     logger.info(f"Total search count: {search_count} search time: " + str(time.time() - start_time))
+    logger.info(f"Found {len(result_wave_list)} valid waves")
     return result_wave_list

@@ -8,6 +8,7 @@ from pathlib import Path
 from copy import copy
 import os
 import json
+import numpy as np
 
 def load_wave_from_dict(wave_dict):
     if wave_dict is None:
@@ -42,6 +43,12 @@ def find_intersection(x1,y1,x2,y2,x3,y3,x4,y4):
         return [px, py]
     except ZeroDivisionError as e:
         return [None, None]
+
+def get_poly_line_by_point(p1, p2):
+    return np.poly1d(np.polyfit(
+        [p1.time_offset, p2.time_offset],
+        [p1.price, p2.price],
+        deg=1))
 
 def get_points_line_converge_point(line1_p1, line1_p2, line2_p1, line2_p2):
     time_offset, price = find_intersection(
@@ -304,4 +311,19 @@ def expand_sub_wave_to_points(base_wave):
             if new_sub_wave.point_list[-1].time_offset - new_sub_wave.point_list[0].time_offset > 4:
                 expand_sub_wave_to_points(new_sub_wave)
                 
-                
+def get_concrete_sub_wave_type_limit(wave):
+    if hasattr(wave.__class__, "concrete_sub_wave_type_limit"):
+        return wave.__class__.concrete_sub_wave_type_limit
+
+    
+    sub_wave_limit = wave.__class__.get_sub_wave_type_limit()
+    concrete_sub_wave_type_limit = []
+    for subwave_num in range(len(sub_wave_limit)):
+        concrete_sub_wave_type_limit.append([])
+        for abstract_type in sub_wave_limit[subwave_num]:
+            concrete_subwave_type_list = get_all_concrete_subclass(abstract_type)
+            concrete_sub_wave_type_limit[subwave_num] += concrete_subwave_type_list
+
+    wave.__class__.concrete_sub_wave_type_limit = concrete_sub_wave_type_limit
+    return concrete_sub_wave_type_limit
+     
