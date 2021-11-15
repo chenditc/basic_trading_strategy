@@ -103,7 +103,6 @@ def handlebar(ContextInfo):
 		
 		ipo_stock_to_apply = [ stock_code for stock_code in ipo_stock.keys() if 
 			(stock_code not in applied_code_set and stock_code not in blacklist_code)]
-		
 		if len(ipo_stock_to_apply) == 0:
 			text = f"{today_date}所有新股完成申购完成，已申购成功： {applied_code_set}"
 			if len(blacklist_code) > 0:
@@ -116,7 +115,8 @@ def handlebar(ContextInfo):
 			stock_info = ipo_stock[stock_code]
 			print(f"Place ipo order for {stock_code}")
 			#order_shares(stock_code, stock_info["maxPurchaseNum"], ContextInfo, ContextInfo.accID)
-			passorder(23,1101,ContextInfo.accID,stock_code,5,-1,stock_info["maxPurchaseNum"],1,ContextInfo)
+			print(stock_info)
+			passorder(23,1101,ContextInfo.accID,stock_code,11,stock_info["issuePrice"],stock_info["maxPurchaseNum"],1,ContextInfo)
 	
 	if today_date not in ContextInfo.strategy_obj.new_stock_tracking_complete_map:
 		# 查看当前持仓情况，获取次新股列表
