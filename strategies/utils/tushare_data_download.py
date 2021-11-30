@@ -17,6 +17,8 @@ def download_daily_price(ts_code, asset, exchange, start_date="19000101", end_da
     
     try:
         df = tushare.pro_bar(ts_code=ts_code, asset=asset, start_date=start_date, end_date=end_date)
+        if len(df) == 0:
+            return False
         df["open"] = df["open"].fillna(df["close"])
         df["low"] = df["low"].fillna(df["close"])
         df["high"] = df["high"].fillna(df["close"])

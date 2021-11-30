@@ -3,6 +3,8 @@ import logging
 import basic_types
 import numpy as np
 
+from numba import jit
+
 logger = logging.getLogger(__name__)
 
 def get_all_local_optimum(point_list):

@@ -6,6 +6,9 @@ import wave_utils
 import waves
 import logging
 
+from numba import jit
+
+
 logger = logging.getLogger(__name__)
 
 def cut_and_prune_search_wave(input_point_list, additional_rules=[]):
