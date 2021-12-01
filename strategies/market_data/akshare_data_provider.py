@@ -5,6 +5,7 @@ from pytz import timezone
 
 from datetime import datetime, timedelta, date
 import time
+from collections import defaultdict
 
 from market_data import data_definition
 
@@ -103,7 +104,6 @@ class AkShareDataProvider(AbstractDataProvider):
         while latest_day < today:
             latest_day_symbol = data_requirement.long_open_chg_top20_field
             new_latest_day = self.get_latest_date_for_symbol(latest_day_symbol, data_requirement)
-            print("Latest date:", new_latest_day)
             if new_latest_day:
                 if new_latest_day > latest_day:
                     latest_day = new_latest_day
@@ -140,7 +140,6 @@ class AkShareDataProvider(AbstractDataProvider):
                 if new_latest_day > latest_day:
                     latest_day = new_latest_day
             
-            print("Latest date:", new_latest_day, latest_day)
             if today > (latest_day + timedelta(days=self.download_step_days)):
                 daily_exchange_price_df = ak.get_futures_daily(start_date=latest_day.strftime("%Y%m%d"), 
                                                                end_date=(latest_day + timedelta(days=self.download_step_days)).strftime("%Y%m%d"), 
@@ -154,9 +153,12 @@ class AkShareDataProvider(AbstractDataProvider):
             daily_exchange_price_df["open"] = daily_exchange_price_df["open"].fillna(daily_exchange_price_df["close"])
             daily_exchange_price_df["high"] = daily_exchange_price_df["high"].fillna(daily_exchange_price_df["close"])
             daily_exchange_price_df["low"] = daily_exchange_price_df["low"].fillna(daily_exchange_price_df["close"])
+            
+            symbol_map = defaultdict(list)
+            
             for index, row in daily_exchange_price_df.iterrows():
                 trade_date = UTC_TZ.localize(datetime.strptime(row['date'], '%Y%m%d'))
-
+                
                 new_bar = BarData(gateway_name='akshare', 
                                   symbol=row["symbol"], 
                                   exchange=data_requirement.exchange, 
@@ -168,7 +170,11 @@ class AkShareDataProvider(AbstractDataProvider):
                                   low_price=row["low"],
                                   close_price=row["close"]
                                  )
-                self.database_manager.save_bar_data([new_bar])                                                      
+                symbol_map[row["symbol"]].append(new_bar)
+                
+            for symbol, bar_list in symbol_map.items():
+                print(f"Saving {symbol}")
+                self.database_manager.save_bar_data(bar_list)                                                      
     
     def download_data(self, data_requirement):
         if type(data_requirement) == data_definition.FutureHoldingData:
