@@ -14,6 +14,7 @@ UTC_TZ = timezone("UTC")
 class AbstractDataProvider():
     def __init__(self, database_manager):
         self.database_manager = database_manager
+        self.download_step_days = 30
         
     def get_latest_date_for_symbol(self, symbol, data_requirement):
         bar_list = self.database_manager.load_bar_data(symbol=symbol, 
@@ -23,7 +24,7 @@ class AbstractDataProvider():
                                                       end=datetime.strptime("20550101", '%Y%m%d'))
         if len(bar_list) == 0:
             return
-        return bar_list[-1].datetime
+        return bar_list[-1].datetime.date()
         
     def convert_ak_df_to_bar_data(self, input_df, symbol, exchange, interval, price_column=None, date_format="%Y%m%d"):
         result_bars = []
@@ -66,7 +67,7 @@ class AbstractDataProvider():
                 is_trading_date = True
                 break
             curr_date -= timedelta(days=1)
-        return curr_date
+        return curr_date.date()
         
 class AkShareDataProvider(AbstractDataProvider):     
     def download_index_data(self, data_requirement):
@@ -94,7 +95,7 @@ class AkShareDataProvider(AbstractDataProvider):
     
     def download_future_holding_data(self, data_requirement):
         exchange = data_requirement.exchange
-        latest_day = UTC_TZ.localize(data_requirement.start_date)
+        latest_day = UTC_TZ.localize(data_requirement.start_date).date()
         
         today = self.get_last_finish_trading_day()
         
@@ -128,7 +129,7 @@ class AkShareDataProvider(AbstractDataProvider):
     
     def download_all_future_tick_data_for_market(self, data_requirement):
         exchange = data_requirement.exchange
-        latest_day = UTC_TZ.localize(data_requirement.start_date)
+        latest_day = UTC_TZ.localize(data_requirement.start_date).date()
         
         today = self.get_last_finish_trading_day()
         no_progress_count = 0
@@ -140,9 +141,9 @@ class AkShareDataProvider(AbstractDataProvider):
                     latest_day = new_latest_day
             
             print("Latest date:", new_latest_day, latest_day)
-            if today > (latest_day + timedelta(days=60)):
+            if today > (latest_day + timedelta(days=self.download_step_days)):
                 daily_exchange_price_df = ak.get_futures_daily(start_date=latest_day.strftime("%Y%m%d"), 
-                                                               end_date=(latest_day + timedelta(days=60)).strftime("%Y%m%d"), 
+                                                               end_date=(latest_day + timedelta(days=self.download_step_days)).strftime("%Y%m%d"), 
                                                                market=data_requirement.exchange.value, 
                                                                index_bar=True)
             else:
