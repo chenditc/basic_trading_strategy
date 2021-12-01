@@ -52,21 +52,26 @@ class AbstractDataProvider():
             result_bars.append(new_bar)
         return result_bars
     
-    def day_reach_end(self, latest_day, end_day):
-        latest_day += timedelta(days=1)
-        while latest_day <= end_day:
-            print("Checking", latest_day, end_day)
-            futures_rule_df = ak.futures_rule(trade_date=latest_day.strftime("%Y%m%d"))
+    def get_last_finish_trading_day(self):
+        curr_date = datetime.now(CHINA_TZ)
+        if curr_date.hour < 17:
+            # Still in trading hour, skip today
+            curr_date -= timedelta(days=1)
+            curr_date = curr_date.replace(hour=0)
+
+        is_trading_date = False
+        while not is_trading_date:
+            futures_rule_df = ak.futures_rule(trade_date=curr_date.strftime("%Y%m%d"))
             if "不是交易日" not in futures_rule_df:
-                return False
-            latest_day += timedelta(days=1)
-        print("day_reach_end", latest_day, end_day)
-        return True
+                is_trading_date = True
+                break
+            curr_date -= timedelta(days=1)
+        return curr_date
         
 class AkShareDataProvider(AbstractDataProvider):     
     def download_index_data(self, data_requirement):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
-        today = UTC_TZ.localize(datetime.today())
+        today = self.get_last_finish_trading_day()
         if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
             return
         
@@ -91,7 +96,7 @@ class AkShareDataProvider(AbstractDataProvider):
         exchange = data_requirement.exchange
         latest_day = UTC_TZ.localize(data_requirement.start_date)
         
-        today = UTC_TZ.localize(datetime.today())
+        today = self.get_last_finish_trading_day()
         
         no_progress_count = 0
         while latest_day < today:
@@ -101,9 +106,6 @@ class AkShareDataProvider(AbstractDataProvider):
             if new_latest_day:
                 if new_latest_day > latest_day:
                     latest_day = new_latest_day
-                else:
-                    if self.day_reach_end(new_latest_day, today):
-                        break
 
             get_rank_sum_daily_df = ak.get_rank_sum_daily(start_day=latest_day.strftime("%Y%m%d"), 
                                                           end_day=today.strftime("%Y%m%d"), 
@@ -128,7 +130,7 @@ class AkShareDataProvider(AbstractDataProvider):
         exchange = data_requirement.exchange
         latest_day = UTC_TZ.localize(data_requirement.start_date)
         
-        today = UTC_TZ.localize(datetime.today())
+        today = self.get_last_finish_trading_day()
         no_progress_count = 0
         while latest_day < today:
             latest_day_symbol = data_requirement.symbol + "99"
@@ -136,9 +138,6 @@ class AkShareDataProvider(AbstractDataProvider):
             if new_latest_day:
                 if new_latest_day > latest_day:
                     latest_day = new_latest_day
-                else:
-                    if self.day_reach_end(new_latest_day, today):
-                        break
             
             print("Latest date:", new_latest_day, latest_day)
             if today > (latest_day + timedelta(days=60)):
