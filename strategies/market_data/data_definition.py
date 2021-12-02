@@ -9,6 +9,9 @@ class DataRequirement():
         self.symbol = symbol
         self.start_date = start_date
         self.exchange = exchange
+        
+    def get_vnpy_symbol(self):
+        return f"{self.symbol}.{self.exchange.value}"
     
 class IndexData(DataRequirement):
     interval=Interval.DAILY
