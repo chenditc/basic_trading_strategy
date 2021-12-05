@@ -7,6 +7,7 @@ from asset_management.models import PositionHistory, CurrentPosition, TargetPosi
 from spiders import SpiderStrategyBackTestingWrapper
 from spread_rolling import SpreadRollingStrategyBackTestingWrapper
 from market_data.data_definition import *
+from utils.email_util import send_notification
 
 strategies_to_run = [
     SpiderStrategyBackTestingWrapper(if_daily_tick_data, if_holding_data),
@@ -21,7 +22,31 @@ def init_database():
     db.create_tables([PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus])    
 
 def calculate_target_trade():
-    pass
+    # Current position
+    all_current_position = CurrentPosition.select()
+    current_symbol_map = {x.symbol: x for x in all_current_position}
+    
+    all_target_position = TargetPosition.select()
+    target_symbol_map = {x.symbol: x for x in all_target_position}
+    
+    trade_map = {}
+    for pos in (set(current_symbol_map.keys()) | set(target_symbol_map.keys())):
+        target_pos = 0
+        current_pos = 0
+        if target_symbol_map.get(pos):
+            target_pos = target_symbol_map.get(pos).volume
+        if current_symbol_map.get(pos):
+            current_pos = current_symbol_map.get(pos).volume
+        pos_diff = target_pos - current_pos
+        if pos_diff == 0:
+            continue
+        trade_map[pos] = pos_diff
+        
+    return trade_map
+
+def notify_trade(trade_map):
+    print(trade_map)
+    #send_notification("交易指令", str(trade_map))
     
 def daily_strategy_run():
     init_database()
@@ -67,4 +92,4 @@ def daily_strategy_run():
             run_record.run_time = int(time.time() - start_time)
             run_record.save()
         
-    calculate_target_trade()
+    trade_map = calculate_target_trade()

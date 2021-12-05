@@ -9,21 +9,21 @@ class BaseModel(Model):
 class PositionHistory(BaseModel):
     symbol = CharField()
     exchange = CharField()
-    volume = IntegerField()
+    volume = DecimalField()
     platform = CharField()
     pos_date = DateField()
 
 class CurrentPosition(BaseModel):
     symbol = CharField()
     exchange = CharField()
-    volume = IntegerField()
+    volume = DecimalField()
     platform = CharField()
     updated_date = DateField()
 
 class TargetPosition(BaseModel):
     symbol = CharField()
     exchange = CharField()
-    volume = IntegerField()
+    volume = DecimalField()
     strategy = CharField()
     generate_date = DateField()
     
