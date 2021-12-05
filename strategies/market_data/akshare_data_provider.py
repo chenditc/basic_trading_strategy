@@ -17,6 +17,8 @@ class AbstractDataProvider():
         self.database_manager = database_manager
         self.download_step_days = 30
         
+        self.trade_calendar_list = None
+        
     def get_latest_date_for_symbol(self, symbol, data_requirement):
         bar_list = self.database_manager.load_bar_data(symbol=symbol, 
                                                       exchange=data_requirement.exchange, 
@@ -55,20 +57,22 @@ class AbstractDataProvider():
         return result_bars
     
     def get_last_finish_trading_day(self):
-        curr_date = datetime.now(CHINA_TZ)
-        if curr_date.hour < 17:
+        if self.trade_calendar_list is None:
+            self.trade_calendar_list = list(ak.tool_trade_date_hist_sina()["trade_date"])
+            
+        curr_date = date.today()
+        if datetime.now(CHINA_TZ).hour < 17:
             # Still in trading hour, skip today
             curr_date -= timedelta(days=1)
-            curr_date = curr_date.replace(hour=0)
 
         is_trading_date = False
         while not is_trading_date:
-            futures_rule_df = ak.futures_rule(trade_date=curr_date.strftime("%Y%m%d"))
-            if "不是交易日" not in futures_rule_df:
+            if curr_date in self.trade_calendar_list:
                 is_trading_date = True
                 break
             curr_date -= timedelta(days=1)
-        return curr_date.date()
+            
+        return curr_date
         
 class AkShareDataProvider(AbstractDataProvider):     
     def download_index_data(self, data_requirement):

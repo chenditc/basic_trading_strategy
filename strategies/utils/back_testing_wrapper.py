@@ -20,7 +20,10 @@ class BackTestingWrapper():
             self.data_provider = data_provider
         else:
             self.data_provider = AkShareDataProvider(get_database())
-            
+                        
+    def get_strategy_name(self):
+        return type(self).__name__
+                
     def show_result(self):
         df = self.engine.calculate_result()
 

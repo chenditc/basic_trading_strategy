@@ -81,20 +81,26 @@ class SpiderStrategyBackTestingWrapper(BackTestingWrapper):
         self.holding_data = holding_data
         super().__init__(data_provider)
         
+    def get_strategy_name(self):
+        return f"{self.price_data.symbol}-{type(self).__name__}"
+        
     def download_data(self):
         self.data_provider.download_data(self.price_data)
         self.data_provider.download_data(self.holding_data)
         
-    def back_test_and_get_today_target_pos(self):
+    def back_test_and_get_today_target_pos(self, start_date=None):
         self.engine = BacktestingEngine()
 
         symbol_list = [self.holding_data.long_open_chg_top20_symbol, self.holding_data.short_open_chg_top20_symbol]
         symbol_list += self.price_data.get_monthly_symbol_list()
         
+        if start_date is None:
+            start_date = self.price_data.start_date
+        
         self.engine.set_parameters(
             vt_symbols=symbol_list,
             interval=self.price_data.interval,
-            start=self.price_data.start_date,
+            start=start_date,
             end=datetime.today(),
             rates=self.rates,
             slippages=self.slippages,

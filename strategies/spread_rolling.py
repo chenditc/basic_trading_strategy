@@ -17,7 +17,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
 
     # params
     min_basis = 0
-    underlying = "000905.SSE"
+    underlying_data = None
     basis_return_only = False
     future_data = None
     verbose = False
@@ -88,16 +88,16 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
         relative_basis_percentage_map = {}
 
         for code in code_list:
-            basis_point = bars[self.underlying].close_price - bars[code].close_price
+            basis_point = bars[self.underlying_data.get_vnpy_symbol()].close_price - bars[code].close_price
             basis_point_map[code] = basis_point
             
         # Anualized basis return percentage
         for code in code_list:
             days_to_expire = (self.get_expired_date(code).date() - current_date.date()).days + 1
-            basis_point_percentage_map[code] = basis_point_map[code] * 100 / bars[self.underlying].close_price / days_to_expire * 365
+            basis_point_percentage_map[code] = basis_point_map[code] * 100 / bars[self.underlying_data.get_vnpy_symbol()].close_price / days_to_expire * 365
             relative_basis_point_map[code] = basis_point_map[code] - basis_point_map[curr_pos]
             relative_days_to_expire = (self.get_expired_date(code).date() - self.get_expired_date(curr_pos).date()).days + 1
-            adj_basis_point = relative_basis_point_map[code] * 100 / bars[self.underlying].close_price / relative_days_to_expire * 365
+            adj_basis_point = relative_basis_point_map[code] * 100 / bars[self.underlying_data.get_vnpy_symbol()].close_price / relative_days_to_expire * 365
             relative_basis_percentage_map[code] = adj_basis_point
                     
         # Update basis bar time series
@@ -105,7 +105,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
         
         avg_adj_basis = sum([x for x in relative_basis_percentage_map.values() if x != 0 and x > 0]) / 3
         #print(avg_adj_basis)
-        underlying_bar = bars[self.underlying]
+        underlying_bar = bars[self.underlying_data.get_vnpy_symbol()]
         self.underlying_bars.append(underlying_bar)
 
         basis_bar = BarData(gateway_name='backtesting', 
@@ -182,6 +182,9 @@ class SpreadRollingStrategyBackTestingWrapper(BackTestingWrapper):
         self.future_data = future_data
         self.underlying_data = underlying_data
         super().__init__(data_provider)
+        
+    def get_strategy_name(self):
+        return f"{self.future_data.symbol}-{type(self).__name__}"
         
     def download_data(self):
         self.data_provider.download_data(self.future_data)
