@@ -16,6 +16,7 @@ class SpiderStrategy(TargetPosStrategyTemplate):
     price_data = None
     holding_data = None
     target_pos_map = None
+    target_pos_reason = None
     trade_vol = 1
     threshold = 0
 
@@ -26,6 +27,7 @@ class SpiderStrategy(TargetPosStrategyTemplate):
         "price_data",
         "holding_data",
         "target_pos_map",
+        "target_pos_reason",
         "trade_vol",
         "threshold",
     ]
@@ -69,6 +71,7 @@ class SpiderStrategy(TargetPosStrategyTemplate):
 
         
         self.target_pos_map[current_date.strftime("%Y%m%d")] = target_pos
+        self.target_pos_reason[current_date.strftime("%Y%m%d")] = f"今日多仓增加: {long_signal} 空仓增加: {short_signal} 阈值 {self.threshold}"
             
         self.trade_to_target_pos(target_pos, bars)
 
@@ -113,6 +116,7 @@ class SpiderStrategyBackTestingWrapper(BackTestingWrapper):
             "price_data":  self.price_data,
             "holding_data": self.holding_data,
             "target_pos_map": self.target_pos_map,
+            "target_pos_reason" : self.target_pos_reason,
             "trade_vol": 1,
             "threshold": 0,
         }

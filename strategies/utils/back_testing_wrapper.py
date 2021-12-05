@@ -13,6 +13,7 @@ class BackTestingWrapper():
         self.capital = 1_000_000
         
         self.target_pos_map = {}
+        self.target_pos_reason = {}
         
         self.engine = None
         
@@ -36,3 +37,7 @@ class BackTestingWrapper():
     def get_latest_pos(self):
         latest_date = self.get_latest_pos_date()
         return self.target_pos_map[latest_date]
+    
+    def get_latest_pos_reasoning(self):
+        latest_date = self.get_latest_pos_date()
+        return self.target_pos_reason[latest_date]

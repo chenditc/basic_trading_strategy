@@ -22,6 +22,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
     future_data = None
     verbose = False
     target_pos_map = None
+    target_pos_reason = None
 
     # vars
     underlying_bars = []
@@ -34,6 +35,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
         "basis_return_only",
         "future_data",
         "target_pos_map",
+        "target_pos_reason",
         "verbose"
     ]
     variables = [
@@ -174,6 +176,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
             target_pos = {roll_to_code: 1}
         self.trade_to_target_pos(target_pos, bars)
         self.target_pos_map[current_date.date()] = target_pos
+        self.target_pos_reason[current_date.date()] = msg
 
         self.put_event()
         
@@ -217,6 +220,7 @@ class SpreadRollingStrategyBackTestingWrapper(BackTestingWrapper):
             "basis_return_only": False,
             "future_data": self.future_data,
             "target_pos_map": self.target_pos_map,
+            "target_pos_reason" : self.target_pos_reason,
             "verbose": False
         }
         self.engine.add_strategy(SpreadRollingStrategy, setting)

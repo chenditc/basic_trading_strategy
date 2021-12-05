@@ -27,3 +27,10 @@ class TargetPosition(BaseModel):
     strategy = CharField()
     generate_date = DateField()
     
+class StrategyRunStatus(BaseModel):
+    strategy = CharField()
+    reason = CharField()
+    status = CharField()
+    run_time = IntegerField()
+    run_date = DateField()
+    
