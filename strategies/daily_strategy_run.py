@@ -7,7 +7,6 @@ from asset_management.models import PositionHistory, CurrentPosition, TargetPosi
 from spiders import SpiderStrategyBackTestingWrapper
 from spread_rolling import SpreadRollingStrategyBackTestingWrapper
 from market_data.data_definition import *
-from utils.email_util import send_notification
 
 strategies_to_run = [
     SpiderStrategyBackTestingWrapper(if_daily_tick_data, if_holding_data),
@@ -44,10 +43,6 @@ def calculate_target_trade():
         
     return trade_map
 
-def notify_trade(trade_map):
-    print(trade_map)
-    #send_notification("交易指令", str(trade_map))
-    
 def daily_strategy_run():
     init_database()
     
@@ -92,4 +87,3 @@ def daily_strategy_run():
             run_record.run_time = int(time.time() - start_time)
             run_record.save()
         
-    trade_map = calculate_target_trade()

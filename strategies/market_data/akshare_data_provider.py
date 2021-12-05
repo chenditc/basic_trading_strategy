@@ -1,5 +1,7 @@
 from vnpy.trader.object import BarData
 from vnpy.trader.constant import Exchange, Interval
+from vnpy.trader.database import get_database
+
 import akshare as ak
 from pytz import timezone
 
@@ -8,6 +10,8 @@ import time
 from collections import defaultdict
 
 from market_data import data_definition
+from asset_management.models import FutureInfo
+
 
 CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
@@ -187,3 +191,17 @@ class AkShareDataProvider(AbstractDataProvider):
             return self.download_all_future_tick_data_for_market(data_requirement)
         if type(data_requirement) == data_definition.IndexData:
             return self.download_index_data(data_requirement)
+
+    def update_future_info(self):
+        self.database_manager.db.create_tables([FutureInfo])
+        
+        futures_rule_df = ak.futures_rule(trade_date="20211206")
+        if len(futures_rule_df) > 0:
+            FutureInfo.delete().execute()
+            for index, row in futures_rule_df.iterrows():
+                if row["交易保证金比例"][-1] != "%":
+                    continue
+                margin_rate = float(row["交易保证金比例"][:-1]) / 100
+                FutureInfo.create(future_symbol=row["代码"],
+                                  margin_rate=margin_rate,
+                                  multiplier=float(row["合约乘数"]))

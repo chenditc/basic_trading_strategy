@@ -12,6 +12,15 @@ class PositionHistory(BaseModel):
     volume = DecimalField()
     platform = CharField()
     pos_date = DateField()
+    # 净值
+    net_value = DecimalField()
+    # 保证金
+    margin_value = DecimalField()
+    
+    class Meta:
+        indexes = (
+            (("symbol", "exchange", "pos_date"), True),
+        )
 
 class CurrentPosition(BaseModel):
     symbol = CharField()
@@ -34,3 +43,7 @@ class StrategyRunStatus(BaseModel):
     run_time = IntegerField()
     run_date = DateField()
     
+class FutureInfo(BaseModel):
+    future_symbol = CharField()
+    margin_rate = DecimalField()
+    multiplier = DecimalField()
