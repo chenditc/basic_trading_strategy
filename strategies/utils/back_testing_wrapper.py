@@ -6,9 +6,16 @@ from market_data.akshare_data_provider import AkShareDataProvider
 
 class BackTestingWrapper():
     def __init__(self, data_provider=None):
+        if data_provider:
+            self.data_provider = data_provider
+        else:
+            self.data_provider = AkShareDataProvider(get_database())
+            
+        self.data_provider.update_future_info()
+        
         self.rates = defaultdict(lambda:0.000023)
         self.slippages = defaultdict(lambda:0)
-        self.sizes = defaultdict(lambda:300)
+        self.sizes = defaultdict(lambda:1)
         self.priceticks = defaultdict(lambda:0.1)
         self.capital = 1_000_000
         
@@ -17,10 +24,12 @@ class BackTestingWrapper():
         
         self.engine = None
         
-        if data_provider:
-            self.data_provider = data_provider
+    def get_future_size_for_symbol(self, symbol):
+        future_info = self.data_provider.get_future_info_for_symbol(symbol)
+        if future_info:
+            return defaultdict(lambda:float(future_info.multiplier))
         else:
-            self.data_provider = AkShareDataProvider(get_database())
+            return self.sizes
                         
     def get_strategy_name(self):
         return type(self).__name__

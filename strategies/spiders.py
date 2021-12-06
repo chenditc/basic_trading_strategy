@@ -107,7 +107,7 @@ class SpiderStrategyBackTestingWrapper(BackTestingWrapper):
             end=datetime.today(),
             rates=self.rates,
             slippages=self.slippages,
-            sizes=self.sizes,
+            sizes=self.get_future_size_for_symbol(self.price_data.symbol),
             priceticks=self.priceticks,
             capital=self.capital,
         )

@@ -204,4 +204,9 @@ class AkShareDataProvider(AbstractDataProvider):
                 margin_rate = float(row["交易保证金比例"][:-1]) / 100
                 FutureInfo.create(future_symbol=row["代码"],
                                   margin_rate=margin_rate,
-                                  multiplier=float(row["合约乘数"]))
+                                  multiplier=float(row["合约乘数"]),
+                                  priceticks=float(row["最小变动价位"])
+                                 )
+                
+    def get_future_info_for_symbol(self, symbol):
+        return FutureInfo.get_or_none(FutureInfo.future_symbol==symbol)
