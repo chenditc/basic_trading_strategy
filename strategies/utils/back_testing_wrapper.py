@@ -3,15 +3,18 @@ from vnpy.trader.database import get_database
 from collections import defaultdict
 
 from market_data.akshare_data_provider import AkShareDataProvider
+from market_data.tushare_data_provider import TuShareDataProvider
+from market_data.smart_data_provider import SmartDataProvider
+
 
 class BackTestingWrapper():
     def __init__(self, data_provider=None):
         if data_provider:
             self.data_provider = data_provider
         else:
-            self.data_provider = AkShareDataProvider(get_database())
+            self.data_provider = SmartDataProvider()
             
-        self.data_provider.update_future_info()
+        #self.data_provider.update_future_info()
         
         self.rates = defaultdict(lambda:0.000023)
         self.slippages = defaultdict(lambda:0)

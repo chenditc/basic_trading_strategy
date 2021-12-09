@@ -4,35 +4,50 @@ from vnpy.trader.database import get_database
 
 import akshare as ak
 from pytz import timezone
+import peewee
 
 from datetime import datetime, timedelta, date
 import time
 from collections import defaultdict
 
 from market_data import data_definition
-from asset_management.models import FutureInfo
+from market_data.models import FutureInfo, FutureHoldingData
+from market_data.base_data_provider import AbstractDataProvider
 
+import tushare as ts
 
 CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
+        
+class AkShareDataProvider(AbstractDataProvider): 
+    def get_last_finish_trading_day(self):
+        if self.trade_calendar_list is None:
+            self.trade_calendar_list = list(ak.tool_trade_date_hist_sina()["trade_date"])
+            
+        curr_date = date.today()
+        if datetime.now(CHINA_TZ).hour < 17:
+            # Still in trading hour, skip today
+            curr_date -= timedelta(days=1)
 
-class AbstractDataProvider():
-    def __init__(self, database_manager):
-        self.database_manager = database_manager
-        self.download_step_days = 30
-        
-        self.trade_calendar_list = None
-        
-    def get_latest_date_for_symbol(self, symbol, data_requirement):
-        bar_list = self.database_manager.load_bar_data(symbol=symbol, 
-                                                      exchange=data_requirement.exchange, 
-                                                      interval=data_requirement.interval, 
-                                                      start=datetime.strptime("19000101", '%Y%m%d'), 
-                                                      end=datetime.strptime("20550101", '%Y%m%d'))
-        if len(bar_list) == 0:
-            return
-        return bar_list[-1].datetime.date()
-        
+        is_trading_date = False
+        while not is_trading_date:
+            if curr_date in self.trade_calendar_list:
+                is_trading_date = True
+                break
+            curr_date -= timedelta(days=1)
+            
+        return curr_date
+    
+    def get_next_trading_day(self, curr_date):
+        if self.trade_calendar_list is None:
+            self.trade_calendar_list = list(ak.tool_trade_date_hist_sina()["trade_date"])
+            
+        curr_date += timedelta(days=1)
+        while True:
+            if curr_date in self.trade_calendar_list:
+                return curr_date
+            curr_date += timedelta(days=1)
+    
     def convert_ak_df_to_bar_data(self, input_df, symbol, exchange, interval, price_column=None, date_format="%Y%m%d"):
         result_bars = []
         for index, row in input_df.iterrows():
@@ -60,25 +75,6 @@ class AbstractDataProvider():
             result_bars.append(new_bar)
         return result_bars
     
-    def get_last_finish_trading_day(self):
-        if self.trade_calendar_list is None:
-            self.trade_calendar_list = list(ak.tool_trade_date_hist_sina()["trade_date"])
-            
-        curr_date = date.today()
-        if datetime.now(CHINA_TZ).hour < 17:
-            # Still in trading hour, skip today
-            curr_date -= timedelta(days=1)
-
-        is_trading_date = False
-        while not is_trading_date:
-            if curr_date in self.trade_calendar_list:
-                is_trading_date = True
-                break
-            curr_date -= timedelta(days=1)
-            
-        return curr_date
-        
-class AkShareDataProvider(AbstractDataProvider):     
     def download_index_data(self, data_requirement):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
         today = self.get_last_finish_trading_day()
@@ -103,37 +99,64 @@ class AkShareDataProvider(AbstractDataProvider):
         
     
     def download_future_holding_data(self, data_requirement):
-        exchange = data_requirement.exchange
-        latest_day = UTC_TZ.localize(data_requirement.start_date).date()
+        latest_day = list(FutureHoldingData.select(peewee.fn.MAX(FutureHoldingData.trade_date))
+                          .where(FutureHoldingData.exchange==data_requirement.exchange.value).dicts())[0]["trade_date"]
+        if latest_day is None:
+            latest_day = date(1990,1,1)
+        else:
+            latest_day = self.get_next_trading_day(latest_day)
         
         today = self.get_last_finish_trading_day()
         
-        no_progress_count = 0
         while latest_day < today:
-            latest_day_symbol = data_requirement.long_open_chg_top20_field
-            new_latest_day = self.get_latest_date_for_symbol(latest_day_symbol, data_requirement)
-            if new_latest_day:
-                if new_latest_day > latest_day:
-                    latest_day = new_latest_day
-
-            get_rank_sum_daily_df = ak.get_rank_sum_daily(start_day=latest_day.strftime("%Y%m%d"), 
-                                                          end_day=today.strftime("%Y%m%d"), 
-                                                          vars_list=[data_requirement.symbol])
-            if len(get_rank_sum_daily_df) > 0:
-                summary_symbol_df = get_rank_sum_daily_df[get_rank_sum_daily_df["symbol"]==data_requirement.symbol]
-                result_bars = self.convert_ak_df_to_bar_data(summary_symbol_df, 
-                                                             data_requirement.long_open_chg_top20_field, 
-                                                             data_requirement.exchange, 
-                                                             data_requirement.interval,
-                                                            price_column="long_open_interest_chg_top20")
-                self.database_manager.save_bar_data(result_bars)
+            new_object_map = {}
+            if data_requirement.exchange.value == "CFFEX":
+                rank_table_dict = ak.get_cffex_rank_table(date=latest_day.strftime("%Y%m%d"))
+            elif data_requirement.exchange.value == "SHFE":
+                rank_table_dict = ak.get_shfe_rank_table(date=latest_day.strftime("%Y%m%d"))
+            elif data_requirement.exchange.value == "CZCE":
+                rank_table_dict = ak.get_czce_rank_table(date=latest_day.strftime("%Y%m%d"))
                 
-                result_bars = self.convert_ak_df_to_bar_data(summary_symbol_df, 
-                                                             data_requirement.short_open_chg_top20_field, 
-                                                             data_requirement.exchange, 
-                                                             data_requirement.interval,
-                                                            price_column="short_open_interest_chg_top20")
-                self.database_manager.save_bar_data(result_bars)
+            for symbol, df in rank_table_dict.items():
+                for index, row in df.iterrows():
+                    # long
+                    if row["long_party_name"] not in new_object_map:
+                        new_holding_data = FutureHoldingData(
+                            trade_date=latest_day,
+                            symbol=symbol,
+                            exchange=data_requirement.exchange.value,
+                            broker=row["long_party_name"])
+                        new_object_map[row["long_party_name"]] = new_holding_data
+                    new_object_map[row["long_party_name"]].long_hld = row["long_open_interest"]
+                    new_object_map[row["long_party_name"]].long_chg = row["long_open_interest_chg"]
+
+                    # short
+                    if row["short_party_name"] not in new_object_map:
+                        new_holding_data = FutureHoldingData(
+                            trade_date=latest_day,
+                            symbol=symbol,
+                            exchange=data_requirement.exchange.value,
+                            broker=row["short_party_name"])
+                        new_object_map[row["short_party_name"]] = new_holding_data
+                    new_object_map[row["short_party_name"]].short_hld = row["short_open_interest"]
+                    new_object_map[row["short_party_name"]].short_chg = row["short_open_interest_chg"]
+
+                    # vol
+                    if row["vol_party_name"] not in new_object_map:
+                        new_holding_data = FutureHoldingData(
+                            trade_date=latest_day,
+                            symbol=symbol,
+                            exchange=data_requirement.exchange.value,
+                            broker=row["vol_party_name"])
+                        new_object_map[row["vol_party_name"]] = new_holding_data
+                    new_object_map[row["vol_party_name"]].vol = row["vol"]
+                    new_object_map[row["vol_party_name"]].vol_chg = row["vol_chg"]
+            # None 表示总数，不需要储存进来
+            if None in new_object_map:
+                del new_object_map[None]
+            FutureHoldingData.bulk_create(list(new_object_map.values()))
+            print(f"Added {len(new_object_map)} FutureHoldingData for {latest_day} {data_requirement.exchange.value}")
+            latest_day = self.get_next_trading_day(latest_day)
     
     def download_all_future_tick_data_for_market(self, data_requirement):
         exchange = data_requirement.exchange

@@ -80,3 +80,6 @@ if_index_data = IndexData(symbol="000300", start_date=datetime(2014,4,16), excha
 
 cu_daily_tick_data = FutureTickData(symbol="CU", start_date=datetime(2010,1,1), exchange=Exchange.SHFE)
 cu_holding_data = FutureHoldingData(symbol="CU", start_date=datetime(2010,1,1), exchange=Exchange.SHFE)
+
+ih_daily_tick_data = FutureTickData(symbol="IH", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)
+ih_holding_data = FutureHoldingData(symbol="IH", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)

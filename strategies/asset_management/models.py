@@ -42,9 +42,3 @@ class StrategyRunStatus(BaseModel):
     status = CharField()
     run_time = IntegerField()
     run_date = DateField()
-    
-class FutureInfo(BaseModel):
-    future_symbol = CharField()
-    margin_rate = DecimalField()
-    multiplier = DecimalField()
-    priceticks = DecimalField()
