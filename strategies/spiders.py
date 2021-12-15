@@ -8,6 +8,8 @@ from utils.back_testing_wrapper import BackTestingWrapper
 from utils.target_pos_strategy_template import TargetPosStrategyTemplate
 from market_data.models import FutureHoldingData
 
+import akshare as ak
+
 class SpiderStrategy(TargetPosStrategyTemplate):
     """"""
 
@@ -20,6 +22,7 @@ class SpiderStrategy(TargetPosStrategyTemplate):
     target_pos_reason = None
     trade_vol = 1
     threshold = 0
+    top_n = 20
 
     # vars
     underlying_bars = []
@@ -31,6 +34,7 @@ class SpiderStrategy(TargetPosStrategyTemplate):
         "target_pos_reason",
         "trade_vol",
         "threshold",
+        "top_n",
     ]
     variables = [
     ]
@@ -72,8 +76,6 @@ class SpiderStrategy(TargetPosStrategyTemplate):
             long_hld = data["long_hld"] or 0
             short_hld = data["short_hld"] or 0
 
-            if (long_hld + short_hld) == 0:
-                continue
             vol = data["vol"] or 0
             long_chg = data["long_chg"] or 0
             short_chg = data["short_chg"] or 0
@@ -87,28 +89,23 @@ class SpiderStrategy(TargetPosStrategyTemplate):
             merged_data_map[data["broker"]] = merged_data
 
         for data in merged_data_map.values():
-            smart_score = abs(data["vol"] * (data["long_hld"] - data["short_hld"]) / (data["long_hld"] + data["short_hld"]))
+            smart_score = abs(float(data["long_hld"] - data["short_hld"])/float(data["long_hld"] + data["short_hld"]+1)/float(1+data["vol"]))
             data["smart_score"] = smart_score
 
         sorted_holding_data = sorted(merged_data_map.values(), key=lambda x: x["smart_score"], reverse=True)
         long_signal = 0
         short_signal = 0
-        for data in sorted_holding_data:
+        for data in sorted_holding_data[:self.top_n]:
             long_signal += data["long_chg"]
             short_signal += data["short_chg"]
-            #print(data["broker"], data["smart_score"], data["long_chg"], data["short_chg"])
-        
-        akshare_long_signal = bars[self.holding_data.long_open_chg_top20_symbol].close_price
-        akshare_short_signal = bars[self.holding_data.short_open_chg_top20_symbol].close_price
-        if akshare_long_signal != long_signal:
-            print("mismatch", current_date, long_signal, akshare_long_signal, short_signal, akshare_short_signal)
+            #print(current_date, data["broker"], data["smart_score"], data["long_chg"], data["short_chg"])
         
         target_pos = {}
-        if long_signal > self.threshold and short_signal < (0 - self.threshold):
+        if long_signal >= self.threshold and short_signal <= (0 - self.threshold):
             print("buy", price_code_list, current_date, long_signal, short_signal)
             if len(price_code_list) > 1:
                 target_pos[price_code_list[1]] = self.trade_vol
-        elif long_signal < (0 - self.threshold) and short_signal > self.threshold:
+        elif long_signal <= (0 - self.threshold) and short_signal >= self.threshold:
             print("short", price_code_list, current_date, long_signal, short_signal)
             if len(price_code_list) > 1:
                 target_pos[price_code_list[1]] = 0 - self.trade_vol
@@ -135,7 +132,7 @@ class SpiderStrategyBackTestingWrapper(BackTestingWrapper):
         self.data_provider.download_data(self.price_data)
         self.data_provider.download_data(self.holding_data)
         
-    def back_test_and_get_today_target_pos(self, start_date=None):
+    def back_test_and_get_today_target_pos(self, start_date=None, top_n=20):
         self.engine = BacktestingEngine()
 
         symbol_list = self.price_data.get_monthly_symbol_list()
@@ -165,6 +162,7 @@ class SpiderStrategyBackTestingWrapper(BackTestingWrapper):
             "target_pos_reason" : self.target_pos_reason,
             "trade_vol": 1,
             "threshold": 0,
+            "top_n": top_n
         }
         self.engine.add_strategy(SpiderStrategy, setting)
 

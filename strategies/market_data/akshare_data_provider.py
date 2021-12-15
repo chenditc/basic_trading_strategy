@@ -98,18 +98,21 @@ class AkShareDataProvider(AbstractDataProvider):
         self.database_manager.save_bar_data(result_bars)
         
     
-    def download_future_holding_data(self, data_requirement):
-        latest_day = list(FutureHoldingData.select(peewee.fn.MAX(FutureHoldingData.trade_date))
-                          .where(FutureHoldingData.exchange==data_requirement.exchange.value).dicts())[0]["trade_date"]
-        if latest_day is None:
-            latest_day = date(1990,1,1)
-        else:
+    def download_future_holding_data(self, data_requirement, start_date=None):
+        self.database_manager.db.create_tables([FutureHoldingData])
+        
+        if start_date is None:
+            latest_day = list(FutureHoldingData.select(peewee.fn.MAX(FutureHoldingData.trade_date))
+                              .where(FutureHoldingData.exchange==data_requirement.exchange.value).dicts())[0]["trade_date"]
+            if latest_day is None:
+                latest_day = date(1990,1,1)
             latest_day = self.get_next_trading_day(latest_day)
+        else:
+            latest_day = start_date            
         
         today = self.get_last_finish_trading_day()
         
         while latest_day < today:
-            new_object_map = {}
             if data_requirement.exchange.value == "CFFEX":
                 rank_table_dict = ak.get_cffex_rank_table(date=latest_day.strftime("%Y%m%d"))
             elif data_requirement.exchange.value == "SHFE":
@@ -118,6 +121,8 @@ class AkShareDataProvider(AbstractDataProvider):
                 rank_table_dict = ak.get_czce_rank_table(date=latest_day.strftime("%Y%m%d"))
                 
             for symbol, df in rank_table_dict.items():
+                symbol = symbol.upper()
+                new_object_map = {}
                 for index, row in df.iterrows():
                     # long
                     if row["long_party_name"] not in new_object_map:
@@ -151,11 +156,11 @@ class AkShareDataProvider(AbstractDataProvider):
                         new_object_map[row["vol_party_name"]] = new_holding_data
                     new_object_map[row["vol_party_name"]].vol = row["vol"]
                     new_object_map[row["vol_party_name"]].vol_chg = row["vol_chg"]
-            # None 表示总数，不需要储存进来
-            if None in new_object_map:
-                del new_object_map[None]
-            FutureHoldingData.bulk_create(list(new_object_map.values()))
-            print(f"Added {len(new_object_map)} FutureHoldingData for {latest_day} {data_requirement.exchange.value}")
+                # None 表示总数，不需要储存进来
+                if None in new_object_map:
+                    del new_object_map[None]
+                FutureHoldingData.bulk_create(list(new_object_map.values()))
+                print(f"Added {len(new_object_map)} FutureHoldingData for {latest_day} {data_requirement.exchange.value}")
             latest_day = self.get_next_trading_day(latest_day)
     
     def download_all_future_tick_data_for_market(self, data_requirement):

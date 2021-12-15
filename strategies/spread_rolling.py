@@ -1,5 +1,5 @@
 from typing import List, Dict
-from datetime import datetime
+from datetime import datetime, date
 import re
 import json
         
@@ -177,7 +177,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
         self.trade_to_target_pos(target_pos, bars)
         self.target_pos_map[current_date.date()] = target_pos
         self.target_pos_reason[current_date.date()] = msg
-
+        
         self.put_event()
         
 class SpreadRollingStrategyBackTestingWrapper(BackTestingWrapper):

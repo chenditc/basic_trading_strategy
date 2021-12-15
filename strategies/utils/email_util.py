@@ -20,6 +20,8 @@ def send_email(title, text):
     
     
 def send_server_chan(title, text, send_key=None, retry=5):
+    if serverchan_config["send_key"] == "":
+        return 
     for i in range(retry):
         try:
             print(title, text)

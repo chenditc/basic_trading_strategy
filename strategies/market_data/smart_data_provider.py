@@ -36,3 +36,6 @@ class SmartDataProvider(AbstractDataProvider):
         
     def get_future_info_for_symbol(self, symbol):
         return self.akshare_provider.get_future_info_for_symbol(symbol)
+    
+    def update_future_info(self):
+        return self.akshare_provider.update_future_info()

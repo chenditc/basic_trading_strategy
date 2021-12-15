@@ -58,7 +58,7 @@ class TuShareDataProvider(AbstractDataProvider):
         input_df["open"] = input_df["open"].fillna(input_df["close"])
         input_df["low"] = input_df["low"].fillna(input_df["close"])
         input_df["high"] = input_df["high"].fillna(input_df["close"])
-        
+        input_df = input_df.replace({np.nan: 0})
         result_bars = []
         for index, row in input_df.iterrows():
             if symbol is None:
@@ -83,6 +83,8 @@ class TuShareDataProvider(AbstractDataProvider):
     
     def download_index_data(self, data_requirement):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
+        if latest_day is None:
+            latest_day = date(1990,1,1)
         today = self.get_last_finish_trading_day()
         if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
             print(f"No new data needed for {data_requirement.symbol}")
@@ -135,7 +137,7 @@ class TuShareDataProvider(AbstractDataProvider):
             print(f"Added {len(new_object_list)} FutureHoldingData for {latest_day} {data_requirement.exchange.value}")
             latest_day = self.get_next_trading_day(latest_day)
             
-    def download_all_future_tick_data(self, data_requirement):        
+    def download_all_future_tick_data(self, data_requirement):
         df = self.pro.fut_basic(exchange=data_requirement.exchange.value, 
                                 fut_type='1', 
                                 fields='ts_code,symbol,list_date,delist_date')
@@ -146,6 +148,10 @@ class TuShareDataProvider(AbstractDataProvider):
             if latest_day and latest_day.strftime("%Y%m%d") >= row["delist_date"]:
                 print(f"Skipping finished future {row}")
                 continue
+            if date.today().strftime("%Y%m%d") <= row["list_date"]:
+                print(f"Skipping not started future {row}")
+                continue
+            print(f"downloading {row}")
             daily_price_df = self.pro.fut_daily(ts_code=row["ts_code"], 
                                                 start_date=row["list_date"], 
                                                 end_date=row["delist_date"])

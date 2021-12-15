@@ -83,3 +83,9 @@ cu_holding_data = FutureHoldingData(symbol="CU", start_date=datetime(2010,1,1), 
 
 ih_daily_tick_data = FutureTickData(symbol="IH", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)
 ih_holding_data = FutureHoldingData(symbol="IH", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)
+
+tf_daily_tick_data = FutureTickData(symbol="TF", start_date=datetime(2013,10,1), exchange=Exchange.CFFEX)
+tf_holding_data = FutureHoldingData(symbol="TF", start_date=datetime(2013,10,1), exchange=Exchange.CFFEX)
+
+ts_daily_tick_data = FutureTickData(symbol="TS", start_date=datetime(2018,10,1), exchange=Exchange.CFFEX)
+ts_holding_data = FutureHoldingData(symbol="TS", start_date=datetime(2018,10,1), exchange=Exchange.CFFEX)

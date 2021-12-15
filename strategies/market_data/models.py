@@ -23,3 +23,8 @@ class FutureHoldingData(BaseModel):
     long_chg = DecimalField(null = True)
     short_hld = DecimalField(null = True)
     short_chg = DecimalField(null = True)
+    
+    class Meta:
+        indexes = (
+            (("trade_date", "symbol", "exchange", "broker"), True),
+         )
