@@ -1,15 +1,24 @@
 from datetime import date
 import time
+import logging
 
 from vnpy.trader.database import get_database
+from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 from asset_management.models import PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus
 from spiders import SpiderStrategyBackTestingWrapper
 from spread_rolling import SpreadRollingStrategyBackTestingWrapper
 from market_data.data_definition import *
+from utils.system_configs import azure_log_key
+from utils.email_util import send_notification
+
+logger = logging.getLogger(__name__)
+logger.addHandler(AzureLogHandler(
+    connection_string=azure_log_key)
+)
 
 strategies_to_run = [
-    SpiderStrategyBackTestingWrapper(if_daily_tick_data, if_holding_data),
+    #SpiderStrategyBackTestingWrapper(if_daily_tick_data, if_holding_data),
     SpreadRollingStrategyBackTestingWrapper(future_data=ic_daily_tick_data,
                                             underlying_data=ic_index_data),
     SpreadRollingStrategyBackTestingWrapper(future_data=if_daily_tick_data,
@@ -65,6 +74,9 @@ def daily_strategy_run():
             last_pos_date = strategy.get_latest_pos_date()
             last_target_pos = strategy.get_latest_pos()
             strategy_name = strategy.get_strategy_name()
+            
+            reasoning_message = strategy.get_latest_pos_reasoning()
+            trade_message = strategy.get_latest_trade_message()
 
             # Update target position
             deleted_num = TargetPosition.delete().where(TargetPosition.strategy==strategy_name).execute()
@@ -76,14 +88,23 @@ def daily_strategy_run():
                                       strategy=strategy_name,
                                       generate_date=today)
                 
+            message_body = f"{strategy_name}\n trade:{trade_message}\n{reasoning_message}"
+            logger.info(message_body)
+            
+            if trade_message != "":
+                send_notification(str(last_pos_date), message_body)
+                
             # Save run record
             run_record.status = "Success"
             run_record.reason = strategy.get_latest_pos_reasoning()
             run_record.run_time = int(time.time() - start_time)
             run_record.save()
         except Exception as e:
+            logger.error(e)
             run_record.status = "Failed"
             run_record.reason = str(e)
             run_record.run_time = int(time.time() - start_time)
             run_record.save()
-        
+       
+if __name__ == "__main__":
+    daily_strategy_run()
