@@ -94,7 +94,7 @@ class BackTestingWrapper():
         body = f"{strategy_name}\n trade:{trade_message}\n{reasoning_message}"
         if trade_message == "":
             logger.info(body)
-            
+            return
         
         logger.info(body)
         send_notification(str(self.get_latest_pos_date()), body)
