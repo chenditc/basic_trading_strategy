@@ -8,8 +8,15 @@ from market_data.akshare_data_provider import AkShareDataProvider
 from market_data.tushare_data_provider import TuShareDataProvider
 from market_data.smart_data_provider import SmartDataProvider
 from utils.email_util import send_notification
+from utils.system_configs import azure_log_key
 
 logger = logging.getLogger(__name__)
+
+if azure_log_key != "":
+    from opencensus.ext.azure.log_exporter import AzureLogHandler
+    logger.addHandler(AzureLogHandler(
+        connection_string=azure_log_key)
+    )
 
 class BackTestingWrapper():
     def __init__(self, data_provider=None):

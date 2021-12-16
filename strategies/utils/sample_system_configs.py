@@ -21,3 +21,5 @@ serverchan_config = {
 notification_callback_urls = [
    "https://di-trading-log.azurewebsites.net/api/log_event?code=123"   
 ]
+
+azure_log_key = ""
