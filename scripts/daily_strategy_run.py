@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/env python3
 from datetime import date
 import json
 import time
@@ -17,6 +17,7 @@ from utils.system_configs import azure_log_key, vnpy_config
 from utils.email_util import send_notification
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 logger.addHandler(AzureLogHandler(
     connection_string=azure_log_key)
 )
