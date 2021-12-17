@@ -30,11 +30,6 @@ strategies_to_run = [
 ]
 
 def init_database():
-    Path("/root/.vntrader").mkdir(parents=True, exist_ok=True)
-    with open("/root/.vntrader/vt_setting.json", "w") as vn_config_file:
-        vn_config_file.write(json.dumps(vnpy_config))
-        SETTINGS.update(vnpy_config)
-    
     db = get_database().db
     db.create_tables([PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus])    
 
