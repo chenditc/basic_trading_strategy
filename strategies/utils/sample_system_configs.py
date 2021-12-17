@@ -23,3 +23,5 @@ notification_callback_urls = [
 ]
 
 azure_log_key = ""
+
+vnpy_config = {"database.name" : "mysql","database.database" : "vnpy","database.user" : "trading","database.password": "123","database.host": "123.sql.tencentcdb.com","database.port" : 123}

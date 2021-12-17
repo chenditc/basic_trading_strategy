@@ -1,15 +1,17 @@
+#!python3
 from datetime import date
+import json
 import time
 import logging
+from pathlib import Path
 
-from vnpy.trader.database import get_database
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 from asset_management.models import PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus
 from spiders import SpiderStrategyBackTestingWrapper
 from spread_rolling import SpreadRollingStrategyBackTestingWrapper
 from market_data.data_definition import *
-from utils.system_configs import azure_log_key
+from utils.system_configs import azure_log_key, vnpy_config
 from utils.email_util import send_notification
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,11 @@ strategies_to_run = [
 ]
 
 def init_database():
+    Path("/root/.vntrader").mkdir(parents=True, exist_ok=True)
+    with open("/root/.vntrader/vt_setting.json", "w") as vn_config_file:
+        vn_config_file.write(json.dumps(vnpy_config))
+    
+    from vnpy.trader.database import get_database
     db = get_database().db
     db.create_tables([PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus])    
 
