@@ -1,4 +1,4 @@
-FROM docker.io/vnpy:latest
+FROM chenditc/vnpy:latest
 
 MAINTAINER chendi chenditc@gmail.com 
 
