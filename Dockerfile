@@ -1,4 +1,4 @@
-FROM tradingrepo.azurecr.io/vnpy:latest
+FROM docker.io/vnpy:latest
 
 MAINTAINER chendi chenditc@gmail.com 
 
