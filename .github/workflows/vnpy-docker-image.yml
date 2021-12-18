@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: VNPY Base Docker Image CI
 
 on:
   push:
