@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/env python3
 from datetime import date
 import json
 import time
@@ -17,6 +17,7 @@ from utils.system_configs import azure_log_key, vnpy_config
 from utils.email_util import send_notification
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 logger.addHandler(AzureLogHandler(
     connection_string=azure_log_key)
 )
@@ -30,11 +31,6 @@ strategies_to_run = [
 ]
 
 def init_database():
-    Path("/root/.vntrader").mkdir(parents=True, exist_ok=True)
-    with open("/root/.vntrader/vt_setting.json", "w") as vn_config_file:
-        vn_config_file.write(json.dumps(vnpy_config))
-        SETTINGS.update(vnpy_config)
-    
     db = get_database().db
     db.create_tables([PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus])    
 
