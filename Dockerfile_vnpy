@@ -1,0 +1,17 @@
+FROM continuumio/miniconda3
+
+MAINTAINER chendi chenditc@gmail.com
+
+# Install software
+#COPY sources.list /etc/apt/sources.list
+RUN apt update && apt install -y build-essential vim unzip file
+
+#RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+RUN wget https://github.com/vnpy/vnpy/archive/refs/tags/2.7.0.zip && unzip 2.7.0.zip && mv vnpy-2.7.0 vnpy
+ENV VNPY_BUILD_sgit=0
+RUN cd vnpy && sed -i '/vnpy_sgit/d' ./requirements.txt && sed -i '/vnpy_arctic/d' ./requirements.txt && sed -i '/vnpy_dolphindb/d' ./requirements.txt && sed -i '/leveldb/d' ./requirements.txt && sed -i '/numpy/d' ./requirements.txt
+RUN cd vnpy && bash -x install.sh
+RUN pip install importlib-metadata
+RUN conda install -y --quiet jupyter
+
+CMD jupyter notebook --allow-root
