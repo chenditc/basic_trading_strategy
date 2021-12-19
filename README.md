@@ -27,15 +27,16 @@ docker run  -it --rm \
 启动开发环境：
 ```shell
 docker run  -it --rm \
+  -e JUPYTER_TOKEN=xxxxxx \
   -v $(pwd)/vt_setting.json:/root/.vntrader/vt_setting.json \
   -v $(pwd):/strategies \
   -p 8888:8888 \
   chenditc/ditrading:latest
 ```
 
-将本地目录挂载至 jupyter 的启动目录，然后在 jupyter notebook 中进行测试和调试。
+将本地目录挂载至 jupyter 的启动目录，然后在 jupyter notebook 中进行测试和调试。Jupyter notebook 的访问 token 是 `JUPYTER_TOKEN` 环境变量对应的值。
 
-在尝试了若干回测框架后发现 vnpy 的相对更灵活，可以对多个标的进行灵活切换，适合作为多资产配置的回测引擎。
+在尝试了若干回测框架后发现 vnpy 的相对更灵活，可以对多个标的进行灵活切换，适合作为多资产配置的回测引擎。目前使用 vnpy 作为回测引擎。
 
 # 实盘交易
 实盘运行：
