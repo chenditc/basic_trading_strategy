@@ -10,5 +10,4 @@ RUN pip install -r /requirements.txt && rm /requirements.txt
 
 ENV PYTHONPATH=/strategies/
 
-COPY start_notebook.sh /start_notebook.sh
-CMD bash /start_notebook.sh
+CMD bash /scripts/start_notebook.sh
