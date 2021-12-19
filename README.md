@@ -58,7 +58,8 @@ docker run -d --rm \
 --------
 # 策略目录
 
-- [股指期货基差套利](strategies/cffex_back_testing.ipynb)
+- [股指期货基差套利](strategies/spread_rolling_bt.ipynb)
 - [港股自动打新](strategies/hk_ipo_strategy.ipynb)
+- [蜘蛛网策略](strategies/spider_back_testing.ipynb)
 
 
