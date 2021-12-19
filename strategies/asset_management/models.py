@@ -14,10 +14,14 @@ class PositionHistory(BaseModel):
     pos_date = DateField()
     # 价格
     last_price = DecimalField()
-    # 净值
+    # 对应交易所币种的净值
     net_value = DecimalField()
+    # 人民币净值
+    cny_net_value = DecimalField()
     # 保证金
     margin_value = DecimalField()
+    # 人民币保证金
+    cny_margin_value = DecimalField()
     
     class Meta:
         indexes = (

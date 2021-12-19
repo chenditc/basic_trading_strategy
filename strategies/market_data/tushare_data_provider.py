@@ -103,6 +103,38 @@ class TuShareDataProvider(AbstractDataProvider):
                                                      data_requirement.exchange)
         print(f"Downloaded {len(result_bars)} bars for {ts_code}") 
         self.database_manager.save_bar_data(result_bars)
+
+    def download_fund_nav_data(self, data_requirement):
+        latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
+        if latest_day is None:
+            latest_day = date(1990,1,1)
+        today = self.get_last_finish_trading_day()
+        if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
+            print(f"No new data needed for {data_requirement.symbol}")
+            return
+        
+        ts_code = data_requirement.symbol + ".OF"
+
+        fund_df = self.pro.fund_nav(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))   
+        result_bars = []
+        for index, row in fund_df.iterrows():
+            trade_date = UTC_TZ.localize(datetime.strptime(row['nav_date'], "%Y%m%d"))
+            new_bar = BarData(gateway_name='tushare', 
+                              symbol=data_requirement.symbol, 
+                              exchange=data_requirement.exchange, 
+                              datetime=trade_date,
+                              interval=data_requirement.interval,
+                              volume=0,
+                              open_price=row['unit_nav'],
+                              high_price=row['unit_nav'],
+                              low_price=row['unit_nav'],
+                              close_price=row['unit_nav'],
+                              open_interest=0
+                             )
+
+            result_bars.append(new_bar)
+        print(f"Downloaded {len(result_bars)} bars for {ts_code}") 
+        self.database_manager.save_bar_data(result_bars)
         
     def download_stock_data(self, data_requirement):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
@@ -116,11 +148,19 @@ class TuShareDataProvider(AbstractDataProvider):
         exchange_suffix_mapping = {
             Exchange.SSE: ".SH",
             Exchange.SZSE: ".SZ",
+            Exchange.HKSE: ".HK",
+            Exchange.NYSE: "",
+            Exchange.NASDAQ: ""
         }
         ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.exchange]
 
-        
-        index_df = self.pro.daily(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))
+        if data_requirement.exchange in [Exchange.SSE, Exchange.SZSE]:
+            index_df = self.pro.daily(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))
+        elif data_requirement.exchange in [Exchange.HKSE]:
+            index_df = self.pro.hk_daily(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))
+        elif data_requirement.exchange in [Exchange.NYSE, Exchange.NASDAQ]:
+            index_df = self.pro.us_daily(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))   
+            
         result_bars = self.convert_ts_df_to_bar_data(index_df, 
                                                      data_requirement.symbol, 
                                                      data_requirement.exchange)
@@ -193,3 +233,5 @@ class TuShareDataProvider(AbstractDataProvider):
             return self.download_index_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
             return self.download_stock_data(data_requirement)
+        if type(data_requirement) == data_definition.FundNavData:
+            return self.download_fund_nav_data(data_requirement)

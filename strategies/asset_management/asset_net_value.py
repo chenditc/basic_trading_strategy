@@ -66,6 +66,20 @@ def calculate_latest_position_history():
         net_value = price * float(curr_position.volume) * multiplier
         margin_value = net_value * margin_rate
         
+        # Get currency rate and convert net value
+        fx = 0
+        if exchange in [Exchange.HKSE]:
+            # HKD to CNY
+            fx_rate = data_provider.get_fx_quote_for_cny("HKD")
+        elif exchange in [Exchange.NYSE, Exchange.NASDAQ]:
+            # USD to CNY
+            fx_rate = data_provider.get_fx_quote_for_cny("USD")
+        else:
+            fx_rate = 1
+        if fx_rate is not None:
+            cny_net_value = net_value * fx_rate
+            cny_margin_value = margin_value * fx_rate
+        
         # Create new position history item
         PositionHistory.insert(symbol=curr_position.symbol,
                                exchange=curr_position.exchange,
@@ -74,5 +88,7 @@ def calculate_latest_position_history():
                                pos_date=last_price_day,
                                last_price=price,
                                net_value=net_value,
-                               margin_value=margin_value).on_conflict_replace().execute()
+                               cny_net_value=cny_net_value,
+                               margin_value=margin_value,
+                               cny_margin_value=cny_margin_value).on_conflict_replace().execute()
                     

@@ -38,7 +38,12 @@ class SmartDataProvider(AbstractDataProvider):
             return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
             return self.tushare_provider.download_data(data_requirement)
+        if type(data_requirement) == data_definition.FundNavData:
+            return self.tushare_provider.download_fund_nav_data(data_requirement)
         logger.error(f"Unknown data: {data_requirement}")
+        
+    def get_fx_quote_for_cny(self, currency):
+        return self.akshare_provider.get_fx_quote_for_cny(currency)
         
     def get_future_info_for_symbol(self, symbol):
         return self.akshare_provider.get_future_info_for_symbol(symbol)

@@ -20,6 +20,17 @@ CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
         
 class AkShareDataProvider(AbstractDataProvider): 
+    def get_fx_quote_for_cny(self, currency):
+        if hasattr(self, "fx_quote_cache"):
+            fx_df = self.fx_quote_cache
+        else:
+            fx_df = ak.fx_spot_quote()
+            self.fx_quote_cache = fx_df
+        target_line = fx_df[fx_df["ccyPair"] == f"{currency}/CNY"]
+        if len(target_line) == 0:
+            return None
+        return float(target_line.iloc[0].bidPrc)
+    
     def get_last_finish_trading_day(self):
         if self.trade_calendar_list is None:
             self.trade_calendar_list = list(ak.tool_trade_date_hist_sina()["trade_date"])
