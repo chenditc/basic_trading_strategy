@@ -15,13 +15,13 @@ class PositionHistory(BaseModel):
     # 价格
     last_price = DecimalField()
     # 对应交易所币种的净值
-    net_value = DecimalField()
+    net_value = DecimalField(max_digits=50)
     # 人民币净值
-    cny_net_value = DecimalField()
+    cny_net_value = DecimalField(max_digits=50)
     # 保证金
-    margin_value = DecimalField()
+    margin_value = DecimalField(max_digits=50)
     # 人民币保证金
-    cny_margin_value = DecimalField()
+    cny_margin_value = DecimalField(max_digits=50)
     
     class Meta:
         indexes = (
