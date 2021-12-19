@@ -13,6 +13,9 @@ class DataRequirement():
     def get_vnpy_symbol(self):
         return f"{self.symbol}.{self.exchange.value}"
     
+    def __str__(self):
+        return self.get_vnpy_symbol()
+    
 class IndexData(DataRequirement):
     interval=Interval.DAILY
     
@@ -68,6 +71,23 @@ class IndexTickData(DataRequirement):
         self.exchange = exchange
         self.start_date = start_date
         
+class StockDailyData(DataRequirement):
+    interval=Interval.DAILY
+    
+    def __init__(self, symbol, exchange, start_date):
+        self.symbol = symbol
+        self.exchange = exchange
+        self.start_date = start_date
+        
+def get_daily_price_data_definition(symbol, exchange):
+    if exchange in [Exchange.CFFEX]:
+        return FutureTickData(symbol=symbol, start_date=datetime(2016,1,1), exchange=exchange)
+    if exchange in [Exchange.SSE]:
+        if symbol.startswith("6"):
+            return StockDailyData(symbol=symbol, start_date=datetime(1900,1,1), exchange=exchange)
+    if exchange in [Exchange.SZSE]:
+        if symbol.startswith("300") or symbol.startswith("000"):
+            return StockDailyData(symbol=symbol, start_date=datetime(1900,1,1), exchange=exchange)
     
         
 ic_daily_tick_data = FutureTickData(symbol="IC", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)

@@ -8,6 +8,7 @@ from pytz import timezone
 import pandas as pd
 import numpy as np
 import peewee
+import logging
 
 from utils.system_configs import tushare_config
 from market_data.base_data_provider import AbstractDataProvider
@@ -18,6 +19,8 @@ from market_data.models import FutureHoldingData
 
 CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
+
+logger = logging.getLogger(__name__)
 
 class SmartDataProvider(AbstractDataProvider):
     def __init__(self, database_manager=None):        
@@ -33,6 +36,9 @@ class SmartDataProvider(AbstractDataProvider):
             return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.IndexData:
             return self.tushare_provider.download_data(data_requirement)
+        if type(data_requirement) == data_definition.StockDailyData:
+            return self.tushare_provider.download_data(data_requirement)
+        logger.error(f"Unknown data: {data_requirement}")
         
     def get_future_info_for_symbol(self, symbol):
         return self.akshare_provider.get_future_info_for_symbol(symbol)

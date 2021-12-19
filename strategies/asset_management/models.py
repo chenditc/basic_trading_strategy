@@ -12,6 +12,8 @@ class PositionHistory(BaseModel):
     volume = DecimalField()
     platform = CharField()
     pos_date = DateField()
+    # 价格
+    last_price = DecimalField()
     # 净值
     net_value = DecimalField()
     # 保证金
