@@ -31,8 +31,9 @@ class PositionHistory(BaseModel):
 class CurrentPosition(BaseModel):
     symbol = CharField()
     name = CharField()
+    tag1 = CharField()
     exchange = CharField()
-    volume = DecimalField()
+    volume = DecimalField(max_digits=50)
     platform = CharField()
     updated_date = DateField()
 
