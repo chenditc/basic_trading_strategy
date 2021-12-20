@@ -30,6 +30,7 @@ class PositionHistory(BaseModel):
 
 class CurrentPosition(BaseModel):
     symbol = CharField()
+    name = CharField()
     exchange = CharField()
     volume = DecimalField()
     platform = CharField()

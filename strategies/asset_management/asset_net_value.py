@@ -45,7 +45,11 @@ def calculate_latest_position_history():
             logger.error(f"Unknown price data: {curr_position.symbol}")
             continue
         
-        data_provider.download_data(data_definition)
+        try:
+            data_provider.download_data(data_definition)
+        except Exception as e:
+            logger.error(f"Failed to download data: {e}")
+            continue
         
         # Get latest price data
         related_symbol_bar_list = database_manager.load_bar_data(symbol=no_suffix_symbol, 
