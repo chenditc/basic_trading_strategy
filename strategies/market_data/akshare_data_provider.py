@@ -235,8 +235,13 @@ class AkShareDataProvider(AbstractDataProvider):
         result_bars = []
         if data_requirement.exchange in [Exchange.NYSE, Exchange.NASDAQ]:
             all_stock_symbol = list(ak.stock_us_spot_em()["代码"])
-            ak_symbol = next(x for x in all_stock_symbol if x.endswith(f".{data_requirement.symbol}"))
-            stock_us_hist_df = ak.stock_us_hist(symbol=ak_symbol, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))  
+            find_symbol_list = [x for x in all_stock_symbol if x.endswith(f".{data_requirement.symbol}")]
+            if len(find_symbol_list) == 0:
+                # ADR code 153
+                ak_symbol = f"153.{data_requirement.symbol}"
+            else:
+                ak_symbol = find_symbol_list[0]
+            stock_us_hist_df = ak.stock_us_hist(symbol=ak_symbol, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))
             
             for index, row in stock_us_hist_df.iterrows():
                 trade_date = UTC_TZ.localize(datetime.strptime(row['日期'], '%Y-%m-%d'))
