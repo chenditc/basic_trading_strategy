@@ -113,7 +113,12 @@ class TuShareDataProvider(AbstractDataProvider):
             print(f"No new data needed for {data_requirement.symbol}")
             return
         
-        ts_code = data_requirement.symbol + ".OF"
+        exchange_suffix_mapping = {
+            "00": ".OF",
+            "16": ".SZ",
+            "50": ".SH",
+        }
+        ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.symbol[:2]]
 
         fund_df = self.pro.fund_nav(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))   
         result_bars = []
