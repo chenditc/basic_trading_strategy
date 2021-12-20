@@ -37,7 +37,11 @@ class SmartDataProvider(AbstractDataProvider):
         if type(data_requirement) == data_definition.IndexData:
             return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
-            return self.tushare_provider.download_data(data_requirement)
+            try:
+                return self.tushare_provider.download_data(data_requirement)
+            except:
+                logger.warning("Fall back to akshare for stock data")
+                return self.akshare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.FundNavData:
             return self.tushare_provider.download_fund_nav_data(data_requirement)
         logger.error(f"Unknown data: {data_requirement}")

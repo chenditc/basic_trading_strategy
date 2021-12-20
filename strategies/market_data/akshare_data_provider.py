@@ -223,6 +223,40 @@ class AkShareDataProvider(AbstractDataProvider):
                 print(f"Saving {symbol}")
                 self.database_manager.save_bar_data(bar_list)                                                      
     
+    def download_stock_data(self, data_requirement):        
+        latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
+        if latest_day is None:
+            latest_day = date(1990,1,1)
+        today = self.get_last_finish_trading_day()
+        if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
+            print(f"No new data needed for {data_requirement.symbol}")
+            return
+        
+        result_bars = []
+        if data_requirement.exchange in [Exchange.NYSE, Exchange.NASDAQ]:
+            all_stock_symbol = list(ak.stock_us_spot_em()["代码"])
+            ak_symbol = next(x for x in all_stock_symbol if x.endswith(f".{data_requirement.symbol}"))
+            stock_us_hist_df = ak.stock_us_hist(symbol=ak_symbol, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))  
+            
+            for index, row in stock_us_hist_df.iterrows():
+                trade_date = UTC_TZ.localize(datetime.strptime(row['日期'], '%Y-%m-%d'))
+                
+                new_bar = BarData(gateway_name='akshare', 
+                                  symbol=data_requirement.symbol, 
+                                  exchange=data_requirement.exchange, 
+                                  datetime=trade_date,
+                                  interval=Interval.DAILY,
+                                  volume=row["成交量"],
+                                  open_price=row["开盘"],
+                                  high_price=row["最高"],
+                                  low_price=row["最低"],
+                                  close_price=row["收盘"]
+                                 )
+                result_bars.append(new_bar)
+
+        print(f"Downloaded {len(result_bars)} bars for {data_requirement.symbol}") 
+        self.database_manager.save_bar_data(result_bars)
+    
     def download_data(self, data_requirement):
         if type(data_requirement) == data_definition.FutureHoldingData:
             return self.download_future_holding_data(data_requirement)
@@ -230,7 +264,9 @@ class AkShareDataProvider(AbstractDataProvider):
             return self.download_all_future_tick_data_for_market(data_requirement)
         if type(data_requirement) == data_definition.IndexData:
             return self.download_index_data(data_requirement)
-
+        if type(data_requirement) == data_definition.StockDailyData:
+            return self.download_stock_data(data_requirement)
+        
     def update_future_info(self):
         self.database_manager.db.create_tables([FutureInfo])
         
