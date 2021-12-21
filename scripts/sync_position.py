@@ -9,6 +9,7 @@ from vnpy.trader.database import get_database
 from asset_management.models import PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus
 from utils.system_configs import azure_log_key
 from asset_management import asset_net_value
+from utils.tencent_db_init import connect_db_and_wait
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,6 +18,7 @@ logger.addHandler(AzureLogHandler(
 )
 
 def init_database():
+    connect_db_and_wait()
     db = get_database().db
     db.create_tables([PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus])    
     

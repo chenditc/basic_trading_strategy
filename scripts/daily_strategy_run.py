@@ -15,6 +15,7 @@ from spread_rolling import SpreadRollingStrategyBackTestingWrapper
 from market_data.data_definition import *
 from utils.system_configs import azure_log_key, vnpy_config
 from utils.email_util import send_notification
+from utils.tencent_db_init import connect_db_and_wait
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,6 +32,7 @@ strategies_to_run = [
 ]
 
 def init_database():
+    connect_db_and_wait()
     db = get_database().db
     db.create_tables([PositionHistory, CurrentPosition, TargetPosition, StrategyRunStatus])    
 
