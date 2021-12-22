@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import utils.tencent_db_init
+
 from datetime import date
 import json
 import time

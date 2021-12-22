@@ -11,3 +11,5 @@ def connect_db_and_wait(seconds=20):
         except OperationalError as e:
             print("Wait and retrying for error", e)
             time.sleep(1)
+            
+connect_db_and_wait(20)
