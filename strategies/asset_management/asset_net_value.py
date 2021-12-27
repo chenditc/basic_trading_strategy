@@ -90,6 +90,7 @@ def calculate_latest_position_history():
                                volume=curr_position.volume,
                                platform=curr_position.platform,
                                pos_date=last_price_day,
+                               run_date=today,
                                last_price=price,
                                net_value=net_value,
                                cny_net_value=cny_net_value,

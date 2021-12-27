@@ -9,9 +9,10 @@ class BaseModel(Model):
 class PositionHistory(BaseModel):
     symbol = CharField()
     exchange = CharField()
-    volume = DecimalField()
+    volume = DecimalField(max_digits=50)
     platform = CharField()
     pos_date = DateField()
+    run_date = DateField()
     # 价格
     last_price = DecimalField()
     # 对应交易所币种的净值
