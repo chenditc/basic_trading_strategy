@@ -26,7 +26,7 @@ class PositionHistory(BaseModel):
     
     class Meta:
         indexes = (
-            (("symbol", "exchange", "pos_date", "platform"), True),
+            (("symbol", "exchange", "run_date", "platform"), True),
         )
 
 class CurrentPosition(BaseModel):
