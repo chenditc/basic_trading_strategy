@@ -85,7 +85,7 @@ def get_daily_price_data_definition(symbol, exchange):
         if symbol.startswith("6"):
             return StockDailyData(symbol=symbol, start_date=datetime(1900,1,1), exchange=exchange)
     if exchange in [Exchange.SZSE]:
-        if symbol.startswith("300") or symbol.startswith("000"):
+        if symbol.startswith("300") or symbol.startswith("00"):
             return StockDailyData(symbol=symbol, start_date=datetime(1900,1,1), exchange=exchange)
     if exchange in [Exchange.HKSE, Exchange.NYSE, Exchange.NASDAQ]:
         return StockDailyData(symbol=symbol, start_date=datetime(1900,1,1), exchange=exchange)
