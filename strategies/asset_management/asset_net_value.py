@@ -20,6 +20,37 @@ def get_future_margin_multiplier_for_symbol(symbol):
     else:
         return 1, 1    
     
+def get_latest_price(no_suffix_symbol, exchange):
+    # Download price data
+    data_definition = get_daily_price_data_definition(no_suffix_symbol, exchange)
+    if type(data_requirement) == data_definition.FxDailyData:
+        return 1
+    
+    if data_definition is None:
+        logger.error(f"Unknown price data: {curr_position.symbol}")
+        return None
+
+    try:
+        data_provider.download_data(data_definition)
+    except Exception as e:
+        logger.error(f"Failed to download data: {e}")
+        return None
+            
+    # Get latest price data
+    related_symbol_bar_list = database_manager.load_bar_data(symbol=no_suffix_symbol, 
+                             exchange=exchange,
+                             interval=Interval.DAILY,
+                             start=data_definition.start_date,
+                             end=datetime.now())
+    if len(related_symbol_bar_list) == 0:
+        logger.error(f"No price data for {curr_position.symbol}")
+        return None
+    last_price_day = related_symbol_bar_list[-1].datetime.date()
+    if last_price_day != today:
+        logger.info(f"No price for {curr_position.symbol} at day {today}, lastest day is {last_price_day}")
+    price = related_symbol_bar_list[-1].close_price
+    return price
+    
 def calculate_latest_position_history():    
     today = date.today()
     database_manager = get_database()
@@ -39,31 +70,9 @@ def calculate_latest_position_history():
             logger.error(f"Unknown exchange: {curr_position.exchange}")
             continue
 
-        # Download price data
-        data_definition = get_daily_price_data_definition(no_suffix_symbol, exchange)
-        if data_definition is None:
-            logger.error(f"Unknown price data: {curr_position.symbol}")
+        price = get_latest_price(no_suffix_symbol, exchange)
+        if price is None:
             continue
-        
-        try:
-            data_provider.download_data(data_definition)
-        except Exception as e:
-            logger.error(f"Failed to download data: {e}")
-            continue
-        
-        # Get latest price data
-        related_symbol_bar_list = database_manager.load_bar_data(symbol=no_suffix_symbol, 
-                                 exchange=exchange,
-                                 interval=Interval.DAILY,
-                                 start=data_definition.start_date,
-                                 end=datetime.now())
-        if len(related_symbol_bar_list) == 0:
-            logger.error(f"No price data for {curr_position.symbol}")
-            continue
-        last_price_day = related_symbol_bar_list[-1].datetime.date()
-        if last_price_day != today:
-            logger.info(f"No price for {curr_position.symbol} at day {today}, lastest day is {last_price_day}")
-        price = related_symbol_bar_list[-1].close_price
         
         # Get calcualte margin value and net value
         margin_rate, multiplier = get_future_margin_multiplier_for_symbol(curr_position.symbol)

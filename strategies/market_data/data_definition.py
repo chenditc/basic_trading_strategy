@@ -77,6 +77,8 @@ class StockDailyData(DataRequirement):
 class ConvertibleBondDailyData(DataRequirement):
     interval=Interval.DAILY
 
+class FxDailyData(DataRequirement):
+    interval=Interval.DAILY
         
 class FundNavData(DataRequirement):
     interval=Interval.DAILY
@@ -86,6 +88,9 @@ def get_daily_price_data_definition(symbol, exchange):
         return FutureTickData(symbol=symbol, start_date=datetime(2016,1,1), exchange=exchange)
     if exchange in [Exchange.DCE]:
         return FutureTickData(symbol=symbol, start_date=datetime(2000,1,1), exchange=exchange)
+    if exchange in [Exchange.OTC]:
+        if symbol in ["USD", "CNY"]
+            return FxDailyData(symbol=symbol, start_date=datetime(2000,1,1), exchange=exchange)
     if exchange in [Exchange.SSE]:
         if symbol.startswith("6"):
             return StockDailyData(symbol=symbol, start_date=datetime(1900,1,1), exchange=exchange)
