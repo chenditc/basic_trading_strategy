@@ -8,7 +8,7 @@ from vnpy.trader.constant import Interval, Exchange
 from asset_management.models import CurrentPosition, PositionHistory
 from market_data.models import FutureInfo
 from market_data.smart_data_provider import SmartDataProvider
-from market_data.data_definition import get_daily_price_data_definition
+from market_data.data_definition import get_daily_price_data_definition, FxDailyData
 
 logger = logging.getLogger(__name__)
 
@@ -20,21 +20,22 @@ def get_future_margin_multiplier_for_symbol(symbol):
     else:
         return 1, 1    
     
-def get_latest_price(no_suffix_symbol, exchange):
+def get_latest_price(no_suffix_symbol, exchange, data_provider, database_manager):
+    today = date.today()
     # Download price data
     data_definition = get_daily_price_data_definition(no_suffix_symbol, exchange)
-    if type(data_requirement) == data_definition.FxDailyData:
-        return 1
+    if type(data_definition) == FxDailyData:
+        return 1, today
     
     if data_definition is None:
         logger.error(f"Unknown price data: {curr_position.symbol}")
-        return None
+        return None, today
 
     try:
         data_provider.download_data(data_definition)
     except Exception as e:
         logger.error(f"Failed to download data: {e}")
-        return None
+        return None, today
             
     # Get latest price data
     related_symbol_bar_list = database_manager.load_bar_data(symbol=no_suffix_symbol, 
@@ -44,12 +45,13 @@ def get_latest_price(no_suffix_symbol, exchange):
                              end=datetime.now())
     if len(related_symbol_bar_list) == 0:
         logger.error(f"No price data for {curr_position.symbol}")
-        return None
+        return None, today
     last_price_day = related_symbol_bar_list[-1].datetime.date()
+    
     if last_price_day != today:
-        logger.info(f"No price for {curr_position.symbol} at day {today}, lastest day is {last_price_day}")
+        logger.info(f"No price for {no_suffix_symbol} at day {today}, lastest day is {last_price_day}")
     price = related_symbol_bar_list[-1].close_price
-    return price
+    return price, last_price_day
     
 def calculate_latest_position_history():    
     today = date.today()
@@ -70,7 +72,7 @@ def calculate_latest_position_history():
             logger.error(f"Unknown exchange: {curr_position.exchange}")
             continue
 
-        price = get_latest_price(no_suffix_symbol, exchange)
+        price, last_price_day = get_latest_price(no_suffix_symbol, exchange, data_provider, database_manager)
         if price is None:
             continue
         
@@ -87,6 +89,8 @@ def calculate_latest_position_history():
         elif exchange in [Exchange.NYSE, Exchange.NASDAQ]:
             # USD to CNY
             fx_rate = data_provider.get_fx_quote_for_cny("USD")
+        elif exchange in [Exchange.OTC]:
+            fx_rate = data_provider.get_fx_quote_for_cny(no_suffix_symbol)
         else:
             fx_rate = 1
         if fx_rate is not None:
