@@ -141,6 +141,29 @@ class TuShareDataProvider(AbstractDataProvider):
         print(f"Downloaded {len(result_bars)} bars for {ts_code}") 
         self.database_manager.save_bar_data(result_bars)
         
+    def download_convertible_bond_data(self, data_requirement):
+        latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
+        if latest_day is None:
+            latest_day = date(1990,1,1)
+        today = self.get_last_finish_trading_day()
+        if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
+            print(f"No new data needed for {data_requirement.symbol}")
+            return
+        
+        exchange_suffix_mapping = {
+            Exchange.SSE: ".SH",
+            Exchange.SZSE: ".SZ",
+        }
+        ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.exchange]
+
+        index_df = self.pro.cb_daily(ts_code=ts_code, start_date=latest_day.strftime("%Y%m%d"), end_date=today.strftime("%Y%m%d"))
+            
+        result_bars = self.convert_ts_df_to_bar_data(index_df, 
+                                                     data_requirement.symbol, 
+                                                     data_requirement.exchange)
+        print(f"Downloaded {len(result_bars)} bars for {ts_code}") 
+        self.database_manager.save_bar_data(result_bars)
+        
     def download_stock_data(self, data_requirement):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
         if latest_day is None:
@@ -238,5 +261,7 @@ class TuShareDataProvider(AbstractDataProvider):
             return self.download_index_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
             return self.download_stock_data(data_requirement)
+        if type(data_requirement) == data_definition.ConvertibleBondDailyData:
+            return self.download_convertible_bond_data(data_requirement)
         if type(data_requirement) == data_definition.FundNavData:
             return self.download_fund_nav_data(data_requirement)
