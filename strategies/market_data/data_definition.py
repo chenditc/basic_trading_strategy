@@ -89,7 +89,7 @@ def get_daily_price_data_definition(symbol, exchange):
     if exchange in [Exchange.DCE]:
         return FutureTickData(symbol=symbol, start_date=datetime(2000,1,1), exchange=exchange)
     if exchange in [Exchange.OTC]:
-        if symbol in ["USD", "CNY"]
+        if symbol in ["USD", "CNY"]:
             return FxDailyData(symbol=symbol, start_date=datetime(2000,1,1), exchange=exchange)
     if exchange in [Exchange.SSE]:
         if symbol.startswith("6"):
