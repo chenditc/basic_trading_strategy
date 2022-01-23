@@ -802,8 +802,36 @@ class Rule34(Rule):
         elif point_list[-1].optimum_type == OptimumType.MINIMUM:
             limit_map["limit_func"] = Rule34.get_optimum_func(OptimumType.MAXIMUM)
         return limit_map
+    
+class Rule35(Rule):
+    desp = "每个浪的时间长度差距不超过10倍"
+    
+    def validate(wave:Wave):
+        wave_length_list = [ wave.point_list[i+1].time_offset - wave.point_list[i].time_offset for i in range(len(wave.point_list)-1) ]
+        if len(wave_length_list) == 0:
+            return True
+        
+        min_wave_length = min(wave_length_list)
+        max_wave_length = max(wave_length_list)
+        return (min_wave_length * 10) >= max_wave_length
+
+    def get_next_point_limit(point_list):
+        limit_map = {}
+
+        wave_length_list = [ point_list[i+1].time_offset - point_list[i].time_offset for i in range(len(point_list)-1) ]
+        if len(wave_length_list) == 0:
+            return limit_map
+        
+        min_wave_length = min(wave_length_list)
+        max_wave_length = max(wave_length_list)
+        
+        min_time = point_list[-1].time_offset + max_wave_length / 10
+        max_time = point_list[-1].time_offset + min_wave_length * 10
+        limit_map["time_limit"] = (min_time, max_time)
+        
+        return limit_map
                     
-waves.Wave.rule_list = [PointNumberRule, TimeDifferentRule, Rule0, Rule34]
+waves.Wave.rule_list = [PointNumberRule, TimeDifferentRule, Rule0, Rule34, Rule35]
 waves.ImpluseWave.rule_list = waves.Wave.rule_list + [Rule2, Rule4, Rule6, Rule7, Rule33]
 
 waves.DiagonalWave.rule_list = waves.Wave.rule_list + [Rule11, Rule2, Rule12, Rule13, Rule14, Rule15, Rule16, Rule17, Rule18]

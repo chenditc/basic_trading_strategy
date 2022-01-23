@@ -53,6 +53,7 @@ class Wave(ABC):
     max_point_num = 999
     is_extend_wave = False # 是否是延长浪
     is_concrete_wave = False
+    max_guide_score = 1
     
     def __init__(self, point_list: list = [], sub_wave_types = []):
         self.point_list = point_list

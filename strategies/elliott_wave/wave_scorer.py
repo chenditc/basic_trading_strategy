@@ -1,6 +1,8 @@
 from scipy import interpolate
+from scipy.stats import chisquare
 import numpy as np
 from collections import defaultdict
+from itertools import product
 
 import wave_utils
 
@@ -29,14 +31,14 @@ class WaveScorer():
         return key
         
     def add_wave_as_parent_wave(self, new_wave):
-        # 1. 生成子浪表。key - 父浪 
+        # 1. 生成父浪表。key - 父浪 
         wave_key = self.get_wave_key_from_wave(new_wave)
         wave_key_map = self.wave_match_map.get(wave_key, {"sub_wave": defaultdict(list), "parent_wave": []})
         wave_key_map["parent_wave"].append(new_wave)
         self.wave_match_map[wave_key] = wave_key_map
     
     def add_sub_wave_hunt(self, new_wave):
-        # 2. 生成子浪表。key - 父浪
+        # 2. 生成子浪表。key - 子浪
         # A two dimension list, first dim is subwave num, second dim is valid subwave
         sub_wave_limit = wave_utils.get_concrete_sub_wave_type_limit(new_wave)
         for subwave_num, concrete_subwave_type_list in enumerate(sub_wave_limit):
@@ -57,18 +59,11 @@ class WaveScorer():
         
         score_info = new_wave.get_score_info()
         wave_total_time = (new_wave.point_list[-1].time_offset - new_wave.point_list[0].time_offset)
-        wave_quality_score = score_info["min"] * wave_total_time
+        wave_quality_score = score_info["min"] / new_wave.max_guide_score
+        assert(wave_quality_score <= 1)
 
         target_points_index = ((self.original_point_time_arr >= new_wave.point_list[0].time_offset) & (self.original_point_time_arr <= new_wave.point_list[-1].time_offset))
         target_time_arr = self.original_point_time_arr[target_points_index]
-        
-        # calculate point correlation for wave.
-        wave_point_time_arr = np.array([x.time_offset for x in new_wave.get_all_points()])
-        wave_point_price_arr = np.array([x.price for x in new_wave.get_all_points()])
-        wave_inter_line = interpolate.interp1d(wave_point_time_arr, wave_point_price_arr)
-
-        wave_inter_points = wave_inter_line(target_time_arr)
-        all_point_diff = sum(abs(wave_inter_points - self.original_point_price_arr[target_points_index]))
         
         # Calculate point correlation without subwave
         wave_point_time_arr = np.array([x.time_offset for x in new_wave.point_list])
@@ -76,13 +71,23 @@ class WaveScorer():
         wave_inter_line = interpolate.interp1d(wave_point_time_arr, wave_point_price_arr)
 
         wave_inter_points = wave_inter_line(target_time_arr)
-        curr_point_diff = sum(abs(wave_inter_points - self.original_point_price_arr[target_points_index]))
+        all_price_points = self.original_point_price_arr[target_points_index]
         
+        min_price = min(np.min(wave_inter_points), np.min(all_price_points))
+        fitness = 1 - np.sum(np.power(all_price_points - wave_inter_points, 2)) / np.sum(np.power(all_price_points - min_price, 2))
+        assert(fitness <= 1)
+        #print(f"Goodness for fit : {fitness}")
+        
+        subwave_score_sum = 0
+        for subwave in new_wave.sub_wave:
+            if subwave is None:
+                continue
+            subwave_score_sum += self.wave_score_map[subwave]
         #print(f"Quality: {wave_quality_score}, point_diff: {point_diff}")
-        final_score = wave_quality_score * (wave_total_time**2) / (all_point_diff + curr_point_diff + wave_total_time)
+        final_score = (wave_quality_score * wave_total_time + subwave_score_sum) * fitness
         return final_score  
     
-    def update_wave_score(self, new_wave):
+    def _update_wave_score(self, new_wave):
         self.wave_score_map[new_wave] = self.get_wave_score(new_wave)
         
     def update_all_wave_score(self):
@@ -99,7 +104,7 @@ class WaveScorer():
                     update_all_wave_score_helper(sub_wave_candidate)
             # Pick best subwave comb
             self.search_and_update_max_sub_wave(wave_to_update)
-            self.update_wave_score(wave_to_update)
+            self._update_wave_score(wave_to_update)
 
         # Start with any wave and recursively update all wave
         for wave_key, wave_key_map in self.wave_match_map.items():
@@ -110,10 +115,15 @@ class WaveScorer():
                 update_all_wave_score_helper(wave)
             
     def search_and_update_max_sub_wave(self, new_wave, only_subwave_num = None):
-        # Check for all sub wave combination
-        # TODO: Use combination score to help decide which wave to choose from
+        """
+        Check for all sub wave combination
+        Use combination score to help decide which wave to choose from
+        """
         sub_wave_limit = wave_utils.get_concrete_sub_wave_type_limit(new_wave)
+        
+        possible_sub_wave_list = []
         for subwave_num, concrete_subwave_type_list in enumerate(sub_wave_limit):
+            possible_sub_wave_list.append([])
             if only_subwave_num and only_subwave_num != subwave_num:
                 continue
             
@@ -129,8 +139,29 @@ class WaveScorer():
                     continue
                 
                 max_score_wave = max(wave_key_map["parent_wave"], key=lambda x: self.wave_score_map[x])
-                if max_score_wave != new_wave.sub_wave[subwave_num]:
-                    new_wave.sub_wave[subwave_num] = max_score_wave
+                possible_sub_wave_list[subwave_num].append(max_score_wave)
+                
+            # Add None placeholder in case no subwave for this slot
+            if len(possible_sub_wave_list[subwave_num]) == 0:
+                possible_sub_wave_list[subwave_num].append(None)
+                
+        # Get all subwave comb and try to score them. pick the highest scored combination
+        all_sub_wave_comb = list(product(*possible_sub_wave_list))
+        if len(all_sub_wave_comb) > 1:
+            max_score_wave_comb = None
+            max_score = 0
+            for sub_wave_comb in all_sub_wave_comb:
+                for subwave_num, sub_wave in enumerate(sub_wave_comb):
+                    new_wave.sub_wave[subwave_num] = sub_wave
+                curr_score = self.get_wave_score(new_wave)
+                if curr_score >= max_score:
+                    max_score_wave_comb = sub_wave_comb
+                    max_score = curr_score
+        else:
+            max_score_wave_comb = all_sub_wave_comb[0]
+                
+        for subwave_num, sub_wave in enumerate(max_score_wave_comb):
+            new_wave.sub_wave[subwave_num] = sub_wave
             
     def update_wave(self, new_wave):
         self.add_wave_as_parent_wave(new_wave)

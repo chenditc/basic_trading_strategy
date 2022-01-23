@@ -12,6 +12,7 @@ class ImpluseWave(MotiveWave):
     标准的推动5浪
     """
     is_concrete_wave = True
+    max_guide_score = 13
     def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
@@ -27,6 +28,7 @@ class ImpluseWave(MotiveWave):
 
 class ExtendImpluseWave(ImpluseWave):
     is_extend_wave = True
+    max_guide_score = 14
     
 class DiagonalWave(MotiveWave):
     """
@@ -39,6 +41,7 @@ class LeadingDiagonalWave(DiagonalWave):
     引导斜纹浪
     """
     is_concrete_wave = True
+    max_guide_score = 3
     def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
@@ -57,6 +60,7 @@ class EndingDiagonalWave(DiagonalWave):
     终结斜纹浪
     """
     is_concrete_wave = True
+    max_guide_score = 4
     def get_sub_wave_type_limit():
         """
         子浪类型的可选值列表
@@ -83,6 +87,7 @@ class ZigZagWave(CorrectiveWave):
     # 总是细分成3浪
     min_point_num = 4
     max_point_num = 4
+    max_guide_score = 7
     is_concrete_wave = True
     def get_sub_wave_type_limit():
         """
@@ -102,6 +107,7 @@ class FlatWave(CorrectiveWave):
     # 总是细分成3浪
     min_point_num = 4
     max_point_num = 4
+    max_guide_score = 4
     is_concrete_wave = True
     def get_sub_wave_type_limit():
         """
@@ -156,18 +162,21 @@ class ContractingTriangleWave(TriangleWave):
     收缩三角形调整浪
     """
     is_concrete_wave = True
+    max_guide_score = 7
 
 class BarrierTriangleWave(TriangleWave):
     """
     屏障三角形调整浪
     """
     is_concrete_wave = True
+    max_guide_score = 6
 
 class ExpandingTriangleWave(TriangleWave):
     """
     扩散三角形调整浪
     """
     is_concrete_wave = True
+    max_guide_score = 13
 
 class CombinationWave(CorrectiveWave):
     """
@@ -181,6 +190,7 @@ class DoubleCombinationWave(CombinationWave):
     """
     min_point_num = 4
     max_point_num = 4
+    max_guide_score = 1
     is_concrete_wave = True
     def get_sub_wave_type_limit():
         """
@@ -199,6 +209,7 @@ class TripleCombinationWave(CombinationWave):
     """
     min_point_num = 6
     max_point_num = 6
+    max_guide_score = 2
     is_concrete_wave = True
     def get_sub_wave_type_limit():
         """
@@ -223,6 +234,7 @@ class ZigZagDoubleCombinationWave(DoubleCombinationWave, ZigZagCombinationWave):
     """
     锯齿形双重联合型调整浪
     """
+    max_guide_score = 1
     is_concrete_wave = True
     def get_sub_wave_type_limit():
         """
@@ -239,6 +251,7 @@ class ZigZagTripleCombinationWave(TripleCombinationWave, ZigZagCombinationWave):
     """
     锯齿形三重联合型调整浪
     """
+    max_guide_score = 2
     is_concrete_wave = True
     def get_sub_wave_type_limit():
         """
