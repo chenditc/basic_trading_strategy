@@ -19,6 +19,9 @@ class DataRequirement():
 class IndexData(DataRequirement):
     interval=Interval.DAILY
     
+class IndexWeightData(DataRequirement):
+    interval=Interval.DAILY
+    
 class FutureData(DataRequirement):
     interval=Interval.DAILY
     
@@ -62,14 +65,6 @@ class FutureHoldingData(FutureData):
     @property
     def short_open_chg_top20_symbol(self):
         return f"{self.short_open_chg_top20_field}.{self.exchange.value}"
-
-class IndexTickData(DataRequirement):
-    interval=Interval.DAILY
-    
-    def __init__(self, symbol, exchange, start_date):
-        self.symbol = symbol
-        self.exchange = exchange
-        self.start_date = start_date
         
 class StockDailyData(DataRequirement):
     interval=Interval.DAILY
@@ -108,11 +103,13 @@ def get_daily_price_data_definition(symbol, exchange):
         
 ic_daily_tick_data = FutureTickData(symbol="IC", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)
 ic_holding_data = FutureHoldingData(symbol="IC", start_date=datetime(2016,1,1), exchange=Exchange.CFFEX)
-ic_index_data = IndexData(symbol="000905", start_date=datetime(2016,1,1), exchange=Exchange.SSE)
+ic_index_data = IndexData(symbol="000905", start_date=datetime(2005,1,1), exchange=Exchange.SSE)
+ic_index_weight_data = IndexWeightData(symbol="000905", start_date=datetime(2006,1,1), exchange=Exchange.SSE)
 
 if_daily_tick_data = FutureTickData(symbol="IF", start_date=datetime(2014,4,16), exchange=Exchange.CFFEX)
 if_holding_data = FutureHoldingData(symbol="IF", start_date=datetime(2014,4,16), exchange=Exchange.CFFEX)
 if_index_data = IndexData(symbol="000300", start_date=datetime(2014,4,16), exchange=Exchange.SSE)
+if_index_weight_data = IndexWeightData(symbol="399300", start_date=datetime(2006,1,1), exchange=Exchange.SZSE)
 
 cu_daily_tick_data = FutureTickData(symbol="CU", start_date=datetime(2010,1,1), exchange=Exchange.SHFE)
 cu_holding_data = FutureHoldingData(symbol="CU", start_date=datetime(2010,1,1), exchange=Exchange.SHFE)

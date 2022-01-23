@@ -36,6 +36,8 @@ class SmartDataProvider(AbstractDataProvider):
             return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.IndexData:
             return self.tushare_provider.download_data(data_requirement)
+        if type(data_requirement) == data_definition.IndexWeightData:
+            return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.ConvertibleBondDailyData:
             return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:

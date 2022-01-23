@@ -8,11 +8,12 @@ from pytz import timezone
 import pandas as pd
 import numpy as np
 import peewee
+import time
 
 from utils.system_configs import tushare_config
 from market_data.base_data_provider import AbstractDataProvider
 from market_data import data_definition
-from market_data.models import FutureHoldingData
+from market_data.models import FutureHoldingData, StockIndexWeightData, StockHoldingData
 
 CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
@@ -103,6 +104,52 @@ class TuShareDataProvider(AbstractDataProvider):
                                                      data_requirement.exchange)
         print(f"Downloaded {len(result_bars)} bars for {ts_code}") 
         self.database_manager.save_bar_data(result_bars)
+        
+    def download_index_weight_data(self, data_requirement):
+        self.database_manager.db.create_tables([StockIndexWeightData])
+        
+        exchange_suffix_mapping = {
+            Exchange.SSE: ".SH",
+            Exchange.SZSE: ".SZ",
+        }
+        exchange_suffix_remapping = {
+            "SH": Exchange.SSE,
+            "SZ": Exchange.SZSE
+        }
+        ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.exchange]
+        
+        while True:
+            latest_day = StockIndexWeightData.select(peewee.fn.MAX(StockIndexWeightData.trade_date)).scalar()
+            if latest_day is None:
+                latest_day = data_requirement.start_date
+            else:
+                latest_day = latest_day + timedelta(days=1)
+            for days_diff in [10,20,30,40]:
+                end_date = latest_day + timedelta(days=days_diff)
+                index_weight_df = self.pro.index_weight(index_code=ts_code, 
+                                                        start_date=latest_day.strftime("%Y%m%d"), 
+                                                        end_date=end_date.strftime("%Y%m%d"))
+                # 每分钟只能调用200次，sleep 0.5 保证每分钟最多120次
+                time.sleep(0.5)
+                # Try until a time delta with result
+                if len(index_weight_df) > 0:
+                    break
+            # If non of the time delta works, stop
+            if len(index_weight_df) == 0:
+                    break
+            insert_rows = []
+            for index, row in index_weight_df.iterrows():
+                insert_rows.append(
+                    {
+                        "index_symbol" : row["index_code"].split(".")[0],
+                        "index_exchange" : exchange_suffix_remapping[row["index_code"].split(".")[1]],
+                        "stock_symbol" : row["con_code"].split(".")[0],
+                        "stock_exchange" : exchange_suffix_remapping[row["con_code"].split(".")[1]],
+                        "trade_date" : datetime.strptime(row['trade_date'], "%Y%m%d"), 
+                        "weight" : row["weight"]
+                    })
+            StockIndexWeightData.replace_many(insert_rows).execute()
+            print(f"Downloaded {len(insert_rows)} index weight for {ts_code} between {latest_day} and {end_date}") 
 
     def download_fund_nav_data(self, data_requirement):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
@@ -259,6 +306,8 @@ class TuShareDataProvider(AbstractDataProvider):
             return self.download_all_future_tick_data(data_requirement)
         if type(data_requirement) == data_definition.IndexData:
             return self.download_index_data(data_requirement)
+        if type(data_requirement) == data_definition.IndexWeightData:
+            return self.download_index_weight_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
             return self.download_stock_data(data_requirement)
         if type(data_requirement) == data_definition.ConvertibleBondDailyData:
