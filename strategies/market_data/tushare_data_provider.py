@@ -27,8 +27,15 @@ class TuShareDataProvider(AbstractDataProvider):
 
     def load_trade_calendar_map(self, exchange):
         if exchange not in self.trade_calendar_map:
-            df = self.pro.trade_cal(exchange=exchange, start_date='19000101', end_date='20501231')
-            self.trade_calendar_map[exchange] = list(df[df["is_open"] == 1]["cal_date"])
+            if exchange == "NYSE" or exchange == "NASDAQ":
+                df = self.pro.us_tradecal(start_date='19000101', end_date='20501231')
+                self.trade_calendar_map[exchange] = list(df[df["is_open"] == 1]["cal_date"])
+            elif exchange == "HKSE":
+                df = self.pro.hk_tradecal(start_date='19000101', end_date='20501231')
+                self.trade_calendar_map[exchange] = list(df[df["is_open"] == 1]["cal_date"])
+            else:
+                df = self.pro.trade_cal(exchange=exchange, start_date='19000101', end_date='20501231')
+                self.trade_calendar_map[exchange] = list(df[df["is_open"] == 1]["cal_date"])
         
     def get_next_trading_day(self, curr_date, exchange="CFFEX"):
         self.load_trade_calendar_map(exchange)
@@ -215,7 +222,7 @@ class TuShareDataProvider(AbstractDataProvider):
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
         if latest_day is None:
             latest_day = date(1990,1,1)
-        today = self.get_last_finish_trading_day()
+        today = self.get_last_finish_trading_day(data_requirement.exchange.value)
         if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
             print(f"No new data needed for {data_requirement.symbol}")
             return
