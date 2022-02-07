@@ -49,3 +49,33 @@ class StockHoldingData(BaseModel):
     end_date = DateField() # 报告结束日期
     holder_name = CharField()
     hold_amount = DecimalField(max_digits=50)
+    hold_ratio = DecimalField(max_digits=50)
+    class Meta:
+        indexes = (
+            (("symbol", "exchange", "ann_date", "end_date", "holder_name"), True),
+         )
+    
+class StockBasicInfo(BaseModel):
+    symbol = CharField()   # 股票代码
+    exchange = CharField() # 交易所
+    trade_date = DateField() # 日期
+    turnover_rate = DecimalField(null = True) # 换手率（%）
+    turnover_rate_f = DecimalField(null = True) # 换手率（自由流通股）
+    volume_ratio = DecimalField(null = True) # 量比
+    pe = DecimalField(null = True) # 市盈率（总市值/净利润， 亏损的PE为空）
+    pe_ttm = DecimalField(null = True) # 市盈率（TTM，亏损的PE为空）
+    pb = DecimalField(null = True) # 市净率（总市值/净资产）
+    ps = DecimalField(null = True) # 市销率
+    ps_ttm = DecimalField(null = True) # 市销率（TTM）
+    dv_ratio = DecimalField(null = True) # 股息率 （%）
+    dv_ttm = DecimalField(null = True) # 股息率（TTM）（%）
+    total_share = DecimalField(null = True) # 总股本 （万股）
+    float_share = DecimalField(null = True) # 流通股本 （万股）
+    free_share = DecimalField(null = True) # 自由流通股本 （万）
+    total_mv = DecimalField(null = True) # 总市值 （万元）
+    circ_mv = DecimalField(null = True) # 流通市值（万元）
+    
+    class Meta:
+        indexes = (
+            (("symbol", "exchange", "trade_date"), True),
+         )

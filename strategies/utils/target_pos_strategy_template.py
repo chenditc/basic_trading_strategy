@@ -71,7 +71,7 @@ class TargetPosStrategyTemplate(StrategyTemplate):
             curr_pos_map[pos] = vol
         return curr_pos_map
         
-    def trade_to_target_pos(self, target_pos, bars):
+    def trade_to_target_pos(self, target_pos, bars, on_error="stop"):
         curr_pos_map = self.get_curr_pos_map()
         if curr_pos_map == target_pos:
             #print("持仓不变不操作")
@@ -81,6 +81,13 @@ class TargetPosStrategyTemplate(StrategyTemplate):
             pos_diff = target_pos.get(pos, 0) - curr_pos_map.get(pos, 0) 
             if pos_diff == 0:
                 continue
+                
+            if pos not in bars:
+                if on_error == "continue":
+                    continue
+                else:
+                    raise Exception(f"No price for {pos}")
+                
             if pos_diff > 0:
                 self.buy(pos, price=bars[pos].close_price * 1.1, volume=abs(pos_diff))
             else:

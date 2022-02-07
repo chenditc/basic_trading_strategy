@@ -15,7 +15,7 @@ from market_data.base_data_provider import AbstractDataProvider
 from market_data.tushare_data_provider import TuShareDataProvider
 from market_data.akshare_data_provider import AkShareDataProvider
 from market_data import data_definition
-from market_data.models import FutureHoldingData
+from market_data.models import FutureHoldingData, StockIndexWeightData
 
 CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
@@ -40,6 +40,10 @@ class SmartDataProvider(AbstractDataProvider):
             return self.tushare_provider.download_data(data_requirement)
         if type(data_requirement) == data_definition.ConvertibleBondDailyData:
             return self.tushare_provider.download_data(data_requirement)
+        if type(data_requirement) == data_definition.StockBasicInfoData:
+            return self.tushare_provider.download_stock_basic_info_data(data_requirement)
+        if type(data_requirement) == data_definition.StockHoldingData:
+            return self.tushare_provider.download_stock_holding_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
             try:
                 return self.tushare_provider.download_data(data_requirement)
@@ -58,3 +62,46 @@ class SmartDataProvider(AbstractDataProvider):
     
     def update_future_info(self):
         return self.akshare_provider.update_future_info()
+    
+    def get_stock_list_for_index(self, data_requirement):
+        stock_list = (StockIndexWeightData
+                      .select(StockIndexWeightData.stock_symbol, 
+                              StockIndexWeightData.stock_exchange, 
+                              peewee.fn.COUNT(StockIndexWeightData.id))
+                      .where(StockIndexWeightData.index_symbol==data_requirement.symbol)
+                      .group_by(StockIndexWeightData.stock_symbol).dicts())
+        return stock_list
+    
+    def download_all_index_stock_basic_info_data(self, data_requirement):
+        stock_list = self.get_stock_list_for_index(data_requirement)
+        for stock_dict in stock_list:
+            temp_data_requirement = data_definition.StockBasicInfoData(symbol=stock_dict["stock_symbol"], 
+                                                   start_date=datetime(2006,1,1), 
+                                                   exchange=Exchange(stock_dict["stock_exchange"]))
+            try:
+                self.download_data(temp_data_requirement)
+            except Exception as e:
+                logger.error(f"Failed to download stock basic info data for {stock_dict} {e}")
+    
+    def download_all_index_stock_holding_data(self, data_requirement):
+        stock_list = self.get_stock_list_for_index(data_requirement)
+        for stock_dict in stock_list:
+            temp_data_requirement = data_definition.StockHoldingData(symbol=stock_dict["stock_symbol"], 
+                                                   start_date=datetime(2006,1,1), 
+                                                   exchange=Exchange(stock_dict["stock_exchange"]))
+            try:
+                self.download_data(temp_data_requirement)
+            except Exception as e:
+                logger.error(f"Failed to download stock holding data for {stock_dict} {e}")
+    
+    
+    def download_all_index_stock_price_data(self, data_requirement):
+        stock_list = self.get_stock_list_for_index(data_requirement)
+        for stock_dict in stock_list:
+            temp_data_requirement = data_definition.StockDailyData(symbol=stock_dict["stock_symbol"], 
+                                                   start_date=datetime(2006,1,1), 
+                                                   exchange=Exchange(stock_dict["stock_exchange"]))
+            try:
+                self.download_data(temp_data_requirement)
+            except Exception as e:
+                logger.error(f"Failed to download stock data for {stock_dict}")

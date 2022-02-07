@@ -68,7 +68,13 @@ class FutureHoldingData(FutureData):
         
 class StockDailyData(DataRequirement):
     interval=Interval.DAILY
+    
+class StockBasicInfoData(DataRequirement):
+    interval=Interval.DAILY
 
+class StockHoldingData(DataRequirement):
+    interval=Interval.DAILY
+    
 class ConvertibleBondDailyData(DataRequirement):
     interval=Interval.DAILY
 

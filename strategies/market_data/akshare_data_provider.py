@@ -21,6 +21,9 @@ UTC_TZ = timezone("UTC")
         
 class AkShareDataProvider(AbstractDataProvider): 
     def get_fx_quote_for_cny(self, currency):
+        if currency == "CNY":
+            return 1
+        
         if hasattr(self, "fx_quote_cache"):
             fx_df = self.fx_quote_cache
         else:

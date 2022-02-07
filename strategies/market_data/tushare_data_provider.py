@@ -13,7 +13,7 @@ import time
 from utils.system_configs import tushare_config
 from market_data.base_data_provider import AbstractDataProvider
 from market_data import data_definition
-from market_data.models import FutureHoldingData, StockIndexWeightData, StockHoldingData
+from market_data.models import FutureHoldingData, StockIndexWeightData, StockHoldingData, StockBasicInfo
 
 CHINA_TZ = timezone("Asia/Shanghai")
 UTC_TZ = timezone("UTC")
@@ -119,12 +119,14 @@ class TuShareDataProvider(AbstractDataProvider):
         ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.exchange]
         
         while True:
-            latest_day = StockIndexWeightData.select(peewee.fn.MAX(StockIndexWeightData.trade_date)).scalar()
+            latest_day = (StockIndexWeightData
+                          .select(peewee.fn.MAX(StockIndexWeightData.trade_date))
+                          .where(StockIndexWeightData.index_symbol==data_requirement.symbol).scalar())
             if latest_day is None:
                 latest_day = data_requirement.start_date
             else:
                 latest_day = latest_day + timedelta(days=1)
-            for days_diff in [10,20,30,40]:
+            for days_diff in [10,20,30,90,3000]:
                 end_date = latest_day + timedelta(days=days_diff)
                 index_weight_df = self.pro.index_weight(index_code=ts_code, 
                                                         start_date=latest_day.strftime("%Y%m%d"), 
@@ -142,9 +144,9 @@ class TuShareDataProvider(AbstractDataProvider):
                 insert_rows.append(
                     {
                         "index_symbol" : row["index_code"].split(".")[0],
-                        "index_exchange" : exchange_suffix_remapping[row["index_code"].split(".")[1]],
+                        "index_exchange" : exchange_suffix_remapping[row["index_code"].split(".")[1]].value,
                         "stock_symbol" : row["con_code"].split(".")[0],
-                        "stock_exchange" : exchange_suffix_remapping[row["con_code"].split(".")[1]],
+                        "stock_exchange" : exchange_suffix_remapping[row["con_code"].split(".")[1]].value,
                         "trade_date" : datetime.strptime(row['trade_date'], "%Y%m%d"), 
                         "weight" : row["weight"]
                     })
@@ -242,6 +244,100 @@ class TuShareDataProvider(AbstractDataProvider):
         print(f"Downloaded {len(result_bars)} bars for {ts_code}") 
         self.database_manager.save_bar_data(result_bars)
 
+    def download_stock_basic_info_data(self, data_requirement):
+        self.database_manager.db.create_tables([StockBasicInfo])
+        
+        latest_day = (StockBasicInfo
+                          .select(peewee.fn.MAX(StockBasicInfo.trade_date))
+                          .where(StockBasicInfo.symbol==data_requirement.symbol).scalar())
+        if latest_day is None:
+            latest_day = data_requirement.start_date
+        
+        today = self.get_last_finish_trading_day()
+        if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
+            print(f"No new data needed for {data_requirement.symbol}")
+            return
+        
+        exchange_suffix_mapping = {
+            Exchange.SSE: ".SH",
+            Exchange.SZSE: ".SZ",
+            Exchange.HKSE: ".HK",
+            Exchange.NYSE: "",
+            Exchange.NASDAQ: ""
+        }
+        ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.exchange]
+
+        basic_info_df = self.pro.daily_basic(ts_code=ts_code)
+        
+        insert_rows = []
+        for index, row in basic_info_df.iterrows():
+            temp_row = row.to_dict()
+            temp_row.update(
+                {
+                    "symbol" : data_requirement.symbol,
+                    "exchange" : data_requirement.exchange.value,
+                    "trade_date" : datetime.strptime(row['trade_date'], "%Y%m%d")
+                })
+            del temp_row["ts_code"]
+            del temp_row["close"]
+            insert_rows.append(temp_row)
+        StockBasicInfo.replace_many(insert_rows).execute()
+            
+        print(f"Downloaded {len(insert_rows)} basic info for {ts_code}") 
+        
+    def download_stock_holding_data(self, data_requirement):
+        self.database_manager.db.create_tables([StockHoldingData])
+        
+        exchange_suffix_mapping = {
+            Exchange.SSE: ".SH",
+            Exchange.SZSE: ".SZ",
+            Exchange.HKSE: ".HK",
+            Exchange.NYSE: "",
+            Exchange.NASDAQ: ""
+        }
+        ts_code = data_requirement.symbol + exchange_suffix_mapping[data_requirement.exchange]
+
+        latest_day = (StockHoldingData
+                          .select(peewee.fn.MAX(StockHoldingData.end_date))
+                          .where(StockHoldingData.symbol==data_requirement.symbol).scalar())
+        if latest_day is None:
+            latest_day = data_requirement.start_date
+        end_date = datetime.today()
+
+        holding_df = self.pro.query('top10_floatholders', 
+                                 ts_code=ts_code, 
+                                 start_date=latest_day.strftime("%Y%m%d"), 
+                                 end_date=end_date.strftime("%Y%m%d"))
+
+        def get_float_shares(symbol, date):
+            result = list(StockBasicInfo
+                 .select(peewee.fn.Max(StockBasicInfo.trade_date), StockBasicInfo.symbol, StockBasicInfo.float_share, StockBasicInfo.trade_date)
+                 .where(StockBasicInfo.trade_date <= date)
+                 .where(StockBasicInfo.symbol==symbol)
+                 .dicts())[0]
+            return result["float_share"]
+        
+        insert_rows = []
+        for index, row in holding_df.iterrows():
+            end_date = datetime.strptime(row['end_date'], "%Y%m%d")
+            float_share = get_float_shares(data_requirement.symbol, end_date)
+            if float_share is None:
+                ratio = 0
+            else:
+                ratio = row["hold_amount"] / float(float_share) / 10000 * 100
+            insert_rows.append({
+                "symbol" : data_requirement.symbol,
+                "exchange" : data_requirement.exchange.value,
+                "ann_date" : datetime.strptime(row['ann_date'], "%Y%m%d"),
+                "end_date" : end_date,
+                "holder_name" : row["holder_name"],
+                "hold_amount" : row["hold_amount"],
+                "hold_ratio": ratio,
+            })
+        StockHoldingData.replace_many(insert_rows).execute()
+
+        print(f"Downloaded {len(insert_rows)} stock holding data for {ts_code}") 
+        
     def download_future_holding_data(self, data_requirement):
         latest_day = list(FutureHoldingData.select(peewee.fn.MAX(FutureHoldingData.trade_date))
                           .where(FutureHoldingData.exchange==data_requirement.exchange.value).dicts())[0]["trade_date"]
@@ -297,7 +393,6 @@ class TuShareDataProvider(AbstractDataProvider):
                                                          data_requirement.exchange)
             self.database_manager.save_bar_data(result_bars)
             print(f"Saving {row}")
-
         
     def download_data(self, data_requirement):
         if type(data_requirement) == data_definition.FutureHoldingData:
@@ -310,6 +405,10 @@ class TuShareDataProvider(AbstractDataProvider):
             return self.download_index_weight_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
             return self.download_stock_data(data_requirement)
+        if type(data_requirement) == data_definition.StockBasicInfoData:
+            return self.download_stock_basic_info_data(data_requirement)
+        if type(data_requirement) == data_definition.StockHoldingData:
+            return self.download_stock_holding_data(data_requirement)
         if type(data_requirement) == data_definition.ConvertibleBondDailyData:
             return self.download_convertible_bond_data(data_requirement)
         if type(data_requirement) == data_definition.FundNavData:
