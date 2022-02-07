@@ -226,14 +226,16 @@ class AkShareDataProvider(AbstractDataProvider):
                 print(f"Saving {symbol}")
                 self.database_manager.save_bar_data(bar_list)                                                      
     
-    def download_stock_data(self, data_requirement):        
+    def download_stock_data(self, data_requirement, force=False):        
         latest_day = self.get_latest_date_for_symbol(data_requirement.symbol, data_requirement)
         if latest_day is None:
             latest_day = date(1990,1,1)
         today = self.get_last_finish_trading_day()
-        if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
-            print(f"No new data needed for {data_requirement.symbol}")
-            return
+
+        if not force:
+            if latest_day and (latest_day.strftime("%Y%m%d") == today.strftime("%Y%m%d")):
+                print(f"No new data needed for {data_requirement.symbol}")
+                return
         
         result_bars = []
         if data_requirement.exchange in [Exchange.NYSE, Exchange.NASDAQ]:
@@ -273,7 +275,10 @@ class AkShareDataProvider(AbstractDataProvider):
         if type(data_requirement) == data_definition.IndexData:
             return self.download_index_data(data_requirement)
         if type(data_requirement) == data_definition.StockDailyData:
-            return self.download_stock_data(data_requirement)
+            if data_requirement.exchange.value in ["HKSE", "NASDAQ", "NYSE"]:
+                return self.download_stock_data(data_requirement, force=True)
+            else:
+                return self.download_stock_data(data_requirement)
         
     def update_future_info(self):
         self.database_manager.db.create_tables([FutureInfo])
