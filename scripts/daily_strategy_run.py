@@ -74,46 +74,49 @@ def daily_strategy_run():
                                               reason = "",
                                               run_time = 0,
                                               run_date = today)
-        try:
-            # Simulate strategy
-            strategy.download_data()
-            strategy.back_test_and_get_today_target_pos(start_date=datetime(2019,1,1))
+        for retry_i in range(5):
+            try:
+                # Simulate strategy
+                strategy.download_data()
+                strategy.back_test_and_get_today_target_pos(start_date=datetime(2019,1,1))
 
-            # Get next target position
-            last_pos_date = strategy.get_latest_pos_date()
-            last_target_pos = strategy.get_latest_pos()
-            strategy_name = strategy.get_strategy_name()
-            
-            reasoning_message = strategy.get_latest_pos_reasoning()
-            trade_message = strategy.get_latest_trade_message()
+                # Get next target position
+                last_pos_date = strategy.get_latest_pos_date()
+                last_target_pos = strategy.get_latest_pos()
+                strategy_name = strategy.get_strategy_name()
 
-            # Update target position
-            deleted_num = TargetPosition.delete().where(TargetPosition.strategy==strategy_name).execute()
-            for symbol, volume in last_target_pos.items():
-                exchange = symbol.split(".")[-1]
-                TargetPosition.create(symbol=symbol,
-                                      exchange=exchange,
-                                      volume=volume,
-                                      strategy=strategy_name,
-                                      generate_date=today)
-                
-            message_body = f"{strategy_name}\n trade:{trade_message}\n{reasoning_message}"
-            logger.info(message_body)
-            
-            if trade_message != "":
-                send_notification(str(last_pos_date), message_body)
-                
-            # Save run record
-            run_record.status = "Success"
-            run_record.reason = strategy.get_latest_pos_reasoning()
-            run_record.run_time = int(time.time() - start_time)
-            run_record.save()
-        except Exception as e:
-            logger.error(e)
-            run_record.status = "Failed"
-            run_record.reason = str(e)
-            run_record.run_time = int(time.time() - start_time)
-            run_record.save()
+                reasoning_message = strategy.get_latest_pos_reasoning()
+                trade_message = strategy.get_latest_trade_message()
+
+                # Update target position
+                deleted_num = TargetPosition.delete().where(TargetPosition.strategy==strategy_name).execute()
+                for symbol, volume in last_target_pos.items():
+                    exchange = symbol.split(".")[-1]
+                    TargetPosition.create(symbol=symbol,
+                                          exchange=exchange,
+                                          volume=volume,
+                                          strategy=strategy_name,
+                                          generate_date=today)
+
+                message_body = f"{strategy_name}\n trade:{trade_message}\n{reasoning_message}"
+                logger.info(message_body)
+
+                if trade_message != "":
+                    send_notification(str(last_pos_date), message_body)
+
+                # Save run record
+                run_record.status = "Success"
+                run_record.reason = strategy.get_latest_pos_reasoning()
+                run_record.run_time = int(time.time() - start_time)
+                run_record.save()
+                break
+            except Exception as e:
+                logger.error(e)
+                run_record.status = "Failed"
+                run_record.reason = str(e)
+                run_record.run_time = int(time.time() - start_time)
+                run_record.save()
+                logger.error(f"Retrying {retry_i} times")
        
 if __name__ == "__main__":
     daily_strategy_run()
