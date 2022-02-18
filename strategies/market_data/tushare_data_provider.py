@@ -49,9 +49,6 @@ class TuShareDataProvider(AbstractDataProvider):
         self.load_trade_calendar_map(exchange)
         
         curr_date = date.today()
-        if datetime.now(CHINA_TZ).hour < 17:
-            # Still in trading hour, skip today
-            curr_date -= timedelta(days=1)
 
         is_trading_date = False
         while not is_trading_date:
