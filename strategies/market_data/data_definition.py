@@ -87,7 +87,7 @@ class FundNavData(DataRequirement):
 def get_daily_price_data_definition(symbol, exchange):
     if exchange in [Exchange.CFFEX]:
         return FutureTickData(symbol=symbol, start_date=datetime(2016,1,1), exchange=exchange)
-    if exchange in [Exchange.DCE]:
+    if exchange in [Exchange.DCE, Exchange.SHF]:
         return FutureTickData(symbol=symbol, start_date=datetime(2000,1,1), exchange=exchange)
     if exchange in [Exchange.OTC]:
         if symbol in ["USD", "CNY"]:
