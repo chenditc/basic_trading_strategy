@@ -162,7 +162,7 @@ class SpreadRollingStrategy(TargetPosStrategyTemplate):
             
             # 只有基差更大时滚动
             if basis_point_percentage_map[code] < basis_point_percentage_map[curr_pos]:
-                roll_reason += f"\n\n{code} relative basis < {curr_pos}"
+                roll_reason += f"\n\n{code} absolute basis < {curr_pos}"
                 continue
             
             roll_reason += f"\n\nRoll {curr_pos} to {code}"
