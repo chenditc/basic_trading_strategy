@@ -5,6 +5,7 @@ chmod 755 /tmp/coscli
 # Dump latest data
 cd /investment_data/
 bash /investment_data/dump_qlib_bin.sh
+mkdir -p ~/.qlib/qlib_data/cn_data
 tar -zxvf qlib_bin.tar.gz -C ~/.qlib/qlib_data/cn_data --strip-components=2
 # Run prediction
 cd /qlib_trading/
